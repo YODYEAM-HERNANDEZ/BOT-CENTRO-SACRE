@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { createBot, createProvider, createFlow, addKeyword, EVENTS } from '@builderbot/bot'
 import { MetaProvider } from '@builderbot/provider-meta'
 import { MemoryDB } from '@builderbot/bot'
@@ -432,12 +433,12 @@ const main = async () => {
     ])
 
     const adapterProvider = createProvider(MetaProvider, {
-        jwtToken: 'EAATK3gN54NUBQBidmabphWoTG7AZANX4NKOJCqOygDDnvZB9hjz0viXZAdTCYZBkxZCRM0NdkPZAAO1MgM2Nl34cPZCylhBwGafcT1TsDx86zUmRd1GxNlRDHW8bnnJyW1E35rvhHQuvcLkJtAOdM9Bh8C3f84pB9PTMP2vr2ew43ToYLVDgsCoZCa4yHRpNWgZDZD',
-        numberId: '929760650211231',
-        verifyToken: 'politecnico2025',
-        version: 'v20.0'
+    jwtToken: process.env.JWT_TOKEN,
+    numberId: process.env.NUMBER_ID,
+    verifyToken: process.env.VERIFY_TOKEN,
+    version: 'v20.0'
     })
-
+  
     const { httpServer, provider } = await createBot({
         flow: adapterFlow,
         provider: adapterProvider,
