@@ -32,16 +32,22 @@ const flowContinuar = addKeyword('FLUJO_CONTINUAR')
  */
 const flowPostServicio = addKeyword('INTERNAL_POST_SERVICE')
     .addAnswer(
-        '¿Te gustaría consultar información de otro servicio? 👇',
+        '¿Te gustaría agendar tu cita o consultar otro servicio? 👇',
         {
             capture: true,
             buttons: [
+                { body: 'Agendar Cita' }, 
                 { body: 'Ver otro' },    
-                { body: 'Ir al Menú' },  
-                { body: 'Salir' }       
+                { body: 'Ir al Menú' }       
             ]
         },
         async (ctx, { gotoFlow }) => {
+            // Lógica para el nuevo botón
+            if (ctx.body.includes('Agendar')) {
+                return gotoFlow(flowAgendar) 
+            }
+            
+            // Lógica existente
             if (ctx.body.includes('otro')) {
                 return gotoFlow(flowServicios) 
             }
@@ -61,17 +67,17 @@ const flowDescripcionServicios = addKeyword('INTERNAL_DESC_SERVICIOS')
 
             // BASE DE DATOS DE DESCRIPCIONES (Limpia)
             const descripciones = {
-                '1': '🫶 *Fisioterapia:*\nAbordamos tu salud de forma integral para recuperar movilidad, seguridad y eliminar dolor a través de técnicas manuales, liberación miofascial y reeducación, buscando el equilibrio de todos tus sistemas.',
-                '2': '👐 *Osteopatía:*\nEvaluamos y tratamos el origen de la disfunción con un abordaje integral. Usamos técnicas manuales sobre los tejidos, viendo al cuerpo como una unidad donde todo está conectado.',
-                '3': '🚶🏻‍♀️ *Reeducación Postural Global (RPG):*\nMétodo eficaz para tratar patologías musculares y óseas relacionadas con la postura. Trabajamos con posturas físicas activas y respiración para corregir la coordinación muscular.',
-                '4': '🩷 *Rehabilitación de Suelo Pélvico:*\nTratamiento especializado para incontinencia, prolapsos, dolor pélvico y disfunciones sexuales. Buscamos recuperar la funcionalidad y calidad de vida en cualquier etapa de la mujer.',
-                '5': '👶 *Osteopatía Pediátrica:*\nTratamiento suave y no invasivo para bebés. Ayudamos a eliminar tensiones por el parto, y tratamos reflujo, cólicos y estreñimiento restableciendo la movilidad digestiva.',
-                '6': '🤰 *Preparación para el parto:*\nTe acompañamos desde la semana 13 reeducando postura y core. Hacia la semana 33 trabajamos pelvis, respiración, masaje perineal y pujo para un parto consciente.',
-                '7': '🤱 *Rehabilitación Post embarazo:*\nRecuperamos la fuerza abdominal y pélvica tras el parto. Tratamos cicatrices (cesárea/episiotomía), diástasis y prevenimos incontinencia o prolapsos.',
-                '8': '🌿 *Mastitis y Lactancia:*\nTratamiento de conductos tapados y mastitis mediante técnicas manuales y aparatología especializada para liberar los ductos, aliviar dolor y favorecer la lactancia.',
-                '9': '🚑 *Rehabilitación oncológica:*\nAcompañamiento en procesos oncológicos pélvicos. Tratamos efectos secundarios post-cirugía como incontinencia, dolor o disfunciones sexuales, mejorando tu calidad de vida.',
-                '10': '🦵 *Drenaje linfático:*\nTécnicas manuales especializadas para tratar alteraciones venosas, retención de líquidos, piernas cansadas o linfedema, reeducando tu sistema circulatorio.',
-                '11': '🙋🏻‍♂️ *Rehabilitación suelo pélvico masculino:*\nAtención integral para hombres: disfunciones genitourinarias, dolor pélvico, problemas de próstata, recuperación post-quirúrgica y sexualidad plena.'
+                '1': '🫶 *Fisioterapia:*\nTratamiento para aliviar dolor, recuperar movilidad y mejorar la función corporal.',
+                '2': '👐 *Osteopatía:*\nEs un tratamiento donde evaluamos y tratamos a través de un abordaje integral observando el origen de la disfunción la cual se aborda a través de técnicas manuales a los tejidos y estructuras del cuerpo observándose como una unidad completa en donde si un sistema está en desequilibrio automáticamente altera la función del cuerpo en general.',
+                '3': '🚶🏻‍♀️ *Reeducación Postural Global (RPG):*\nEs un método fisioterapéutico para tratar las diferentes patologías del sistema muscular y óseo, especialmente aquellas que tienen relación con la postura. Consiste en realizar posturas activas, poniendo atención en la respiración y trabajando distintas regiones y sistemas de coordinación muscular.',
+                '4': '🩷 *Rehabilitación de Suelo Pélvico:*\nEs un tratamiento en el que se brinda atención especializada y personalizada para disfunciones relacionadas a esta zona.',
+                '5': '👶 *Osteopatía Pediátrica:*\nEs un tratamiento no invasivo que ayuda a eliminar tensiones en el recién nacido posiblemente generadas por posiciones uterinas, cesáreas o expulsivos instrumentados o prolongados, son técnicas no invasivas ni dolorosas.',
+                '6': '🤰 *Preparación para el parto:*\nEs un tratamiento enfocado en mejorar la movilidad técnica, disminuir molestias y facilitar un mejor parto en el cual es ideal iniciar después de tu semana 18.',
+                '7': '🤱 *Rehabilitación Post embarazo:*\nEs un tratamiento enfocado en recuperación física tras el embarazo y el parto, reeducamos la musculatura abdominal y pélvica, liberamos cicatrices si es el caso, trabajamos postura y respiración, te ayudamos a la actividad diaria y te ayudamos a sentirte fuerte, estable y en equilibrio en tu día a día.',
+                '8': '🌿 *Mastitis y Lactancia:*\nDurante el post parto una de las complicaciones que pueden tener es inflamación o conductos mamarios tapados, ocasionando dolor, inflamación, temperatura, las técnicas y equipo que utilizamos no se interponen con la lactancia por lo que te ayudamos a sumar en tu maternidad.',
+                '9': '🚑 *Rehabilitación oncológica:*\nDirigido a pacientes que hayan tenido algún tema oncológico para mejorar arcos de movilidad, fuerza aliviar. Se ofrece calidad de vida y enfocado, sobre todo en pacientes con temas glandulares que hayan desencadenado linfedema, y se encuentren en etapa preventiva en tratamiento o paliativo.',
+                '10': '🦵 *Drenaje linfático:*\nTratamiento enfocado a pacientes que requieran disminución del edema, ya sea por 1 tema oncológico, linfedema primario, Lipedema, pacientes embarazadas, de posparto.',
+                '11': '🙋🏻‍♂️ *Rehabilitación suelo pélvico masculino:*\nEs un tratamiento dirigido a hombres que presentan disfunciones pélvicas como incontinencia, dolor pélvico, dificultades urinarias o cambios después de cirugía de próstata, te ayudamos a recuperar fuerza, control y continuidad con tu día a día.'
             };
 
             const info = descripciones[opcion];
@@ -174,6 +180,24 @@ const flowCancelar = addKeyword(['cancelar', 'baja'])
         async (_, { gotoFlow }) => { return gotoFlow(flowContinuar) }
     )
 
+// --- NUEVO FLUJO AGREGADO: LLEGADA TARDE ---
+const flowTarde = addKeyword(['tarde', 'retraso', 'llegar'])
+    .addAnswer(
+        [
+            'Perfecto, lo notificaremos! 🕒',
+            '',
+            'Recuerda que la hora completa es tuya y al llegar tarde a la cita, el tiempo se reducirá',
+            'y no será posible realizar el tratamiento completo, lo cual es importante para',
+            'nosotras.',
+            '¡También para poder respetar los horarios de todos los pacientes!',
+            '',
+            'Agradecemos su comprensión y puntualidad. 🙏'
+        ].join('\n'),
+        null,
+        async (_, { gotoFlow }) => { return gotoFlow(flowContinuar) }
+    )
+// -------------------------------------------
+
 const flowHorarios = addKeyword(['horarios', 'horario', 'abierto'])
     .addAnswer(
         '🕒 Los horarios varían por sede. ¿Cuál deseas consultar?',
@@ -248,7 +272,7 @@ const flowAgendar = addKeyword(['agendar', 'cita', 'reservar'])
         [
             '📅 *Pasos para agendar tu cita:*',
             '',
-            '1️⃣ Entra aquí: https://tu-link-de-agenda.com', 
+            '1️⃣ Entra aquí: https://centrosacre.com/solicitudCitas?cc=yuwE3pdEW3', 
             '2️⃣ Elige sucursal, sesión y fisioterapeuta.',
             '3️⃣ Selecciona hora y confirma tus datos. ✅',
             '',
@@ -316,6 +340,7 @@ const flowSucursalesNavegacion = addKeyword('INTERNAL_SUCURSALES_NAV')
         }
     )
 
+// --- MENÚ ACTUALIZADO CON OPCIÓN 10 ---
 const flowMenu = addKeyword(['Menu', 'menu', 'menú'])
     .addAnswer(
         [
@@ -331,6 +356,7 @@ const flowMenu = addKeyword(['Menu', 'menu', 'menú'])
             '7️⃣ Facturación 🧾',
             '8️⃣ ¿Quiénes somos? ✨',
             '9️⃣ Hablar con asesor 👩‍💻',
+            '1️⃣0️⃣ Vas tarde a tu cita 🏃', // <--- Opción Agregada
             '',
             '*(Escribe el número de la opción)*'
         ].join('\n'),
@@ -346,6 +372,9 @@ const flowMenu = addKeyword(['Menu', 'menu', 'menú'])
             if (['7', 'siete'].includes(opcion)) return gotoFlow(flowFactura);
             if (['8', 'ocho'].includes(opcion)) return gotoFlow(flowNosotros);
             if (['9', 'nueve'].includes(opcion)) return gotoFlow(flowAsesor);
+            
+            // <--- Lógica Agregada
+            if (['10', 'diez', 'tarde'].includes(opcion)) return gotoFlow(flowTarde);
             
             return fallBack('⚠️ Opción no válida. Escribe solo el número (ej: 1).');
         }
@@ -386,7 +415,7 @@ const flowPrincipal = addKeyword(EVENTS.WELCOME)
     .addAnswer(
         [
             '¡Hola! 😊 Te damos la bienvenida a *Centro Sacre* 🩷.',
-            'Soy tu asistente virtual, listo para ayudarte.',
+            'Soy tu asistente virtual FisioBot, listo para ayudarte.',
             '',
             'Indícanos si eres paciente de primera vez:'
         ].join('\n'),
@@ -411,13 +440,14 @@ const flowPrincipal = addKeyword(EVENTS.WELCOME)
 const main = async () => {
     const adapterDB = new MemoryDB()
     
+    // --- SE AGREGÓ flowTarde A LA LISTA ---
     const adapterFlow = createFlow([
         flowPrincipal,
         flowFormulario,
         flowMenu,
         flowServicios,
         flowDescripcionServicios, 
-        flowPostServicio,         
+        flowPostServicio,        
         flowSucursales,
         flowSucursalesNavegacion, 
         flowAgendar,
@@ -425,6 +455,7 @@ const main = async () => {
         flowHorarios,
         flowHorariosNavegacion,
         flowCancelar,
+        flowTarde, // <--- Aquí
         flowFactura,
         flowNosotros,
         flowAsesor,
