@@ -3,218 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sacre Web Admin</title>
+    <title>Sacre CRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background-color: #d1d7db; font-family: 'Segoe UI', sans-serif; }
-        /* Scrollbar estilo WhatsApp */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #rgba(0,0,0,0.2); border-radius: 3px; }
-        .chat-bg { background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-repeat: repeat; background-color: #efeae2; }
-        .msg-cliente { background-color: #ffffff; border-radius: 0px 10px 10px 10px; }
-        .msg-admin { background-color: #d9fdd3; border-radius: 10px 0px 10px 10px; margin-left: auto; }
-        .msg-bot { background-color: #e0e0e0; border-radius: 10px 10px 10px 0px; font-size: 0.9em; margin-right: auto; }
-        .active-chat { background-color: #f0f2f5; border-left: 4px solid #008069; }
+        body { background-color: #d1d7db; font-family: sans-serif; }
+        .chat-bg { background-color: #efeae2; }
+        
+        /* ESTILOS DE BURBUJAS */
+        .msg-cliente { background-color: #ffffff; border-radius: 0px 10px 10px 10px; align-self: flex-start; }
+        .msg-admin { background-color: #d9fdd3; border-radius: 10px 0px 10px 10px; align-self: flex-end; }
+        .msg-bot { background-color: #e3e6e8; border-radius: 10px 10px 10px 0px; align-self: flex-end; font-size: 0.9em; border: 1px solid #ccc; font-style: italic; }
+        
+        .active-chat { background-color: #e9edef; border-left: 4px solid #008069; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden">
 
-    <div class="w-1/3 bg-white border-r border-gray-300 flex flex-col min-w-[300px]">
+    <div class="w-1/3 bg-white border-r flex flex-col min-w-[300px]">
         <div class="bg-[#f0f2f5] p-4 flex justify-between items-center border-b h-16">
-            <div class="font-bold text-gray-700"><i class="fas fa-user-circle text-2xl mr-2"></i> Admin</div>
-            <div class="text-xs text-gray-500">Centro Sacre</div>
+            <div class="font-bold text-gray-700">Centro Sacre CRM</div>
+            <div onclick="loadContacts()" class="cursor-pointer text-gray-500"><i class="fas fa-sync"></i></div>
         </div>
-        
-        <div class="p-2 bg-white">
-            <div class="bg-[#f0f2f5] rounded-lg p-2 flex items-center">
-                <i class="fas fa-search text-gray-500 mx-2"></i>
-                <input type="text" placeholder="Buscar chat..." class="bg-transparent w-full focus:outline-none text-sm">
-            </div>
-        </div>
-
-        <div id="contacts-list" class="flex-1 overflow-y-auto">
-            <div class="text-center p-4 text-gray-400 text-sm">Cargando chats...</div>
-        </div>
+        <div id="contacts-list" class="flex-1 overflow-y-auto"></div>
     </div>
 
     <div class="flex-1 flex flex-col bg-[#efeae2] relative min-w-[400px]">
-        
-        <div id="empty-state" class="absolute inset-0 z-10 bg-[#f0f2f5] flex flex-col justify-center items-center border-b-8 border-[#008069]">
-            <h1 class="text-3xl font-light text-gray-600 mb-4">Centro Sacre Web</h1>
-            <p class="text-gray-500 text-sm">Selecciona un chat para comenzar a administrar.</p>
+        <div id="empty-state" class="absolute inset-0 z-10 bg-[#f0f2f5] flex flex-col justify-center items-center">
+            <h1 class="text-2xl text-gray-600">Selecciona un chat</h1>
         </div>
 
         <div class="bg-[#f0f2f5] p-3 flex justify-between items-center h-16 border-b z-20">
             <div class="flex items-center">
                 <i class="fas fa-user-circle text-3xl text-gray-400 mr-3"></i>
                 <div>
-                    <div id="chat-title" class="font-bold text-gray-800">Selecciona un chat</div>
-                    <div id="chat-subtitle" class="text-xs text-gray-500">...</div>
+                    <div id="chat-title" class="font-bold text-gray-800">...</div>
+                    <div id="chat-status" class="text-xs text-gray-500">...</div>
                 </div>
             </div>
-            <button id="btn-bot-toggle" onclick="toggleBot()" class="hidden px-4 py-2 rounded shadow text-sm font-bold transition">
-                Cargando...
-            </button>
+            <button id="btn-toggle" onclick="toggleBot()" class="hidden px-4 py-2 rounded text-sm font-bold shadow"></button>
         </div>
 
-        <div id="chat-history" class="flex-1 overflow-y-auto p-4 chat-bg space-y-2 flex flex-col">
-            </div>
+        <div id="chat-history" class="flex-1 overflow-y-auto p-4 chat-bg flex flex-col space-y-2"></div>
 
-        <div class="bg-[#f0f2f5] p-3 flex items-center gap-2">
-            <input type="text" id="message-input" class="flex-1 p-3 rounded-lg border-none focus:outline-none focus:ring-1 focus:ring-[#008069]" placeholder="Escribe un mensaje..." onkeypress="handleEnter(event)">
-            <button onclick="enviarMensaje()" class="text-[#008069] text-2xl px-2 hover:bg-gray-200 rounded-full p-2"><i class="fas fa-paper-plane"></i></button>
+        <div class="bg-[#f0f2f5] p-3 flex gap-2">
+            <input type="text" id="msg-input" class="flex-1 p-3 rounded-lg border-none focus:outline-none" placeholder="Escribe un mensaje..." onkeypress="handleEnter(event)">
+            <button onclick="sendMsg()" class="text-[#008069] text-2xl px-3"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
 
     <script>
         let currentPhone = null;
-        let isBotOff = false;
+        let isBotActive = true; // true = Bot responde, false = Humano
 
-        // 1. Cargar Contactos
         async function loadContacts() {
-            try {
-                const res = await fetch('/api/contacts');
-                const contacts = await res.json();
-                const list = document.getElementById('contacts-list');
-                
-                list.innerHTML = ''; // Limpiar
+            const res = await fetch('/api/contacts');
+            const contacts = await res.json();
+            const list = document.getElementById('contacts-list');
+            list.innerHTML = '';
 
-                contacts.forEach(c => {
-                    const activeClass = (currentPhone === c.phone) ? 'active-chat' : 'hover:bg-[#f5f6f6]';
-                    const iconBot = c.isHumanMode ? '<i class="fas fa-robot text-red-500" title="Bot Apagado"></i>' : '';
-                    
-                    const html = `
-                        <div onclick="selectChat('${c.phone}')" class="flex items-center p-3 cursor-pointer border-b border-gray-100 ${activeClass}">
-                            <div class="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl mr-3">
-                                <i class="fas fa-user"></i>
-                            </div>
-                            <div class="flex-1">
-                                <div class="flex justify-between">
-                                    <span class="font-bold text-gray-800">${c.phone}</span>
-                                    <span class="text-xs text-gray-400">${new Date(c.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <p class="text-sm text-gray-500 truncate w-48">${c.lastMessage}</p>
-                                    <span>${iconBot}</span>
-                                </div>
-                            </div>
+            contacts.forEach(c => {
+                const active = currentPhone === c.phone ? 'active-chat' : 'hover:bg-gray-100';
+                const botStatus = c.isHumanMode ? '<span class="text-red-500 text-xs font-bold">[BOT OFF]</span>' : '';
+                
+                list.innerHTML += `
+                    <div onclick="openChat('${c.phone}')" class="p-3 border-b cursor-pointer ${active}">
+                        <div class="flex justify-between">
+                            <span class="font-bold text-gray-800">${c.phone}</span>
+                            <span class="text-xs text-gray-400">${new Date(c.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                         </div>
-                    `;
-                    list.innerHTML += html;
-                });
-            } catch(e) { console.error(e); }
+                        <div class="flex justify-between mt-1">
+                            <span class="text-sm text-gray-500 truncate w-40">${c.lastMessage}</span>
+                            ${botStatus}
+                        </div>
+                    </div>
+                `;
+            });
         }
 
-        // 2. Seleccionar un Chat
-        async function selectChat(phone) {
+        async function openChat(phone) {
             currentPhone = phone;
             document.getElementById('empty-state').style.display = 'none';
-            document.getElementById('chat-title').innerText = `+${phone}`;
+            document.getElementById('chat-title').innerText = phone;
             
-            // Cargar estado del bot
-            // (En una app real esto vendría en el API de contactos, aquí refrescamos)
-            const contactsRes = await fetch('/api/contacts');
-            const contacts = await contactsRes.json();
-            const contact = contacts.find(c => c.phone === phone);
-            updateBotButton(contact.isHumanMode);
+            // Check bot status
+            const res = await fetch('/api/contacts');
+            const data = await res.json();
+            const contact = data.find(c => c.phone === phone);
+            updateButton(contact ? contact.isHumanMode : false);
 
             loadMessages();
         }
 
-        // 3. Cargar Mensajes
         async function loadMessages() {
-            if (!currentPhone) return;
+            if(!currentPhone) return;
             const res = await fetch(`/api/chat?phone=${currentPhone}`);
-            const messages = await res.json();
+            const msgs = await res.json();
             const box = document.getElementById('chat-history');
-            
             box.innerHTML = '';
 
-            messages.forEach(msg => {
-                let divClass = '';
-                if (msg.from === 'admin') divClass = 'msg-admin';
-                else if (msg.from === 'bot') divClass = 'msg-bot';
-                else divClass = 'msg-cliente';
+            msgs.forEach(m => {
+                let cls = 'msg-cliente';
+                let label = '';
+                
+                if (m.role === 'admin') { cls = 'msg-admin'; label = '<i class="fas fa-user-tie text-xs mr-1"></i>'; }
+                else if (m.role === 'bot') { cls = 'msg-bot'; label = '<i class="fas fa-robot text-xs mr-1"></i>'; }
 
-                const html = `
-                    <div class="p-2 px-3 mb-2 shadow-sm max-w-[70%] ${divClass} relative">
-                        <div class="text-sm">${msg.body}</div>
+                box.innerHTML += `
+                    <div class="p-2 px-3 shadow-sm max-w-[75%] ${cls} flex flex-col">
+                        <div class="text-sm">${m.body}</div>
                         <div class="text-[10px] text-gray-400 text-right mt-1">
-                            ${msg.from === 'admin' ? '<i class="fas fa-check-double text-blue-500"></i>' : ''} 
-                            ${new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            ${label} ${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
                         </div>
                     </div>
                 `;
-                box.innerHTML += html;
             });
-
-            // Scroll al final
             box.scrollTop = box.scrollHeight;
         }
 
-        // 4. Enviar Mensaje
-        async function enviarMensaje() {
-            const input = document.getElementById('message-input');
-            const text = input.value;
-            if (!text || !currentPhone) return;
-
-            input.value = ''; // Limpiar rápido
+        async function sendMsg() {
+            const input = document.getElementById('msg-input');
+            const txt = input.value;
+            if(!txt || !currentPhone) return;
             
-            // Render optimista (mostrarlo antes de confirmar)
-            const box = document.getElementById('chat-history');
-            box.innerHTML += `<div class="p-2 px-3 mb-2 shadow-sm max-w-[70%] msg-admin relative"><div class="text-sm">${text}</div></div>`;
-            box.scrollTop = box.scrollHeight;
-
+            input.value = '';
+            // Optimistic update
+            document.getElementById('chat-history').innerHTML += `
+                <div class="p-2 px-3 shadow-sm max-w-[75%] msg-admin align-self-end flex flex-col bg-[#d9fdd3] rounded-tl-lg rounded-bl-lg rounded-br-lg ml-auto">
+                    <div class="text-sm">${txt}</div>
+                </div>`;
+            
             await fetch('/api/send', {
-                method: 'POST',
+                method: 'POST', 
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ phone: currentPhone, message: text })
+                body: JSON.stringify({ phone: currentPhone, message: txt })
             });
-            
-            loadMessages(); // Recargar para confirmar
+            setTimeout(loadMessages, 500);
         }
 
-        // 5. Botón Apagar/Prender Bot
         async function toggleBot() {
-            const newState = isBotOff ? true : false; // Si está apagado(true), mandamos prender(true)
+            // Si el bot está activo (isBotActive=true), queremos apagarlo (active=false)
+            // La API recibe "active": true para prender, false para apagar.
+            const newStatus = !isBotActive; // Invertir estado actual
             
             const res = await fetch('/api/toggle-bot', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ phone: currentPhone, active: newState })
+                body: JSON.stringify({ phone: currentPhone, active: newStatus })
             });
             const data = await res.json();
-            updateBotButton(data.isHuman);
-            loadContacts(); // Para actualizar el icono rojo en la lista
+            // isHumanMode es true si el bot está apagado.
+            updateButton(data.isHuman);
+            loadContacts();
         }
 
-        function updateBotButton(isHuman) {
-            isBotOff = isHuman;
-            const btn = document.getElementById('btn-bot-toggle');
+        function updateButton(isHumanMode) {
+            const btn = document.getElementById('btn-toggle');
             btn.style.display = 'block';
             
-            if (isHuman) {
-                // Bot está apagado (Modo Humano) -> Mostrar botón para ENCENDER
-                btn.innerText = '🤖 PRENDER BOT';
-                btn.className = 'px-4 py-2 rounded shadow text-xs font-bold transition bg-green-100 text-green-700 hover:bg-green-200 border border-green-300';
-                document.getElementById('chat-subtitle').innerText = 'Atención Personalizada (Bot Pausado)';
+            // isHumanMode = true significa BOT APAGADO
+            if (isHumanMode) {
+                isBotActive = false;
+                btn.innerText = '🔴 BOT APAGADO (Click para encender)';
+                btn.className = 'px-4 py-2 rounded text-xs font-bold shadow bg-red-100 text-red-600 border border-red-200 hover:bg-red-200';
+                document.getElementById('chat-status').innerText = 'Modo Manual';
             } else {
-                // Bot está prendido -> Mostrar botón para APAGAR
-                btn.innerText = '✋ DETENER BOT';
-                btn.className = 'px-4 py-2 rounded shadow text-xs font-bold transition bg-red-100 text-red-700 hover:bg-red-200 border border-red-300';
-                document.getElementById('chat-subtitle').innerText = 'Respuesta Automática Activa';
+                isBotActive = true;
+                btn.innerText = '🟢 BOT ENCENDIDO (Click para apagar)';
+                btn.className = 'px-4 py-2 rounded text-xs font-bold shadow bg-green-100 text-green-600 border border-green-200 hover:bg-green-200';
+                document.getElementById('chat-status').innerText = 'Modo Automático';
             }
         }
 
-        function handleEnter(e) { if(e.key === 'Enter') enviarMensaje(); }
+        function handleEnter(e) { if(e.key === 'Enter') sendMsg(); }
 
-        // Actualizar automáticamente cada 3 segundos
         setInterval(() => {
             loadContacts();
-            if(currentPhone) loadMessages(); // Solo si hay chat abierto
-        }, 3000);
+            if(currentPhone) loadMessages();
+        }, 3000); // Refresco cada 3 seg
 
         loadContacts();
     </script>
