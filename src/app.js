@@ -41,7 +41,7 @@ const registrarMensaje = (telefono, role, body, mediaUrl = null) => {
     if (baseDatosChats[telefono].length > 300) baseDatosChats[telefono].shift()
 }
 
-// --- FLUJOS BASE (IMPORTANTE: EL ORDEN EVITA ERRORES) ---
+// --- FLUJOS BASE ---
 
 const flowHumano = addKeyword('INTERNAL_HUMAN_MODE')
     .addAction(async (ctx) => console.log(`Usuario ${ctx.from} en modo silencio.`))
@@ -50,20 +50,18 @@ const flowHumano = addKeyword('INTERNAL_HUMAN_MODE')
         return endFlow()
     })
 
-// AQUI ESTABA EL ERROR: Faltaba definir flowDespedida antes de usarlo
 const flowDespedida = addKeyword('FLUJO_DESPEDIDA')
     .addAnswer('¡Gracias por elegir Centro Sacre! 🌿💖')
 
-// Este flujo usa flowDespedida, así que debe ir después
 const flowContinuar = addKeyword('FLUJO_CONTINUAR')
-    .addAnswer('¿Deseas realizar alguna otra consulta? 👇', { capture: true, buttons: [{ body: 'Ir al Menú' }, { body: 'Finalizar' }] }, 
+    .addAnswer('¿Deseas realizar alguna otra consulta? 👇\n\n*(Por favor, selecciona el número o el botón de lo que desees hacer)*', 
+    { capture: true, buttons: [{ body: 'Ir al Menú' }, { body: 'Finalizar' }] }, 
     async (ctx, { gotoFlow }) => {
-        // flowMenu se define más abajo, pero en el callback funciona bien por ser asíncrono
         if(ctx.body.includes('Menú')) return gotoFlow(flowMenu);
         return gotoFlow(flowDespedida);
     })
 
-// --- FLUJOS DEL MENÚ (CON TUS TEXTOS) ---
+// --- FLUJOS DE RESPUESTA ---
 
 const flowAsesor = addKeyword(['asesor', 'humano'])
     .addAnswer([
@@ -85,14 +83,12 @@ const flowNosotros = addKeyword(['quienes', 'somos'])
         'Más que una clínica, somos un espacio que conecta cuerpo, mente y emoción, promoviendo una salud que cuida la vida misma 💗'
     ].join('\n\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
 
+// --- MODIFICADO: FACTURA ---
 const flowFactura = addKeyword(['factura'])
-    .addAnswer('Con gusto te ayudamos con tu factura. Solo necesitamos:\n✏️ Nombre completo del paciente', { capture: true }, async (ctx, { state }) => state.update({ nombreFactura: ctx.body }))
-    .addAnswer('📄 Constancia de situación fiscal (actualizada)', { capture: true })
     .addAnswer([
-        'En cuanto la tengamos, procesaremos tu factura lo antes posible 💫',
-        'Muchas Gracias en unos momentos recibirá su factura.',
-        'Siempre agradeciendo su preferencia.'
-    ].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
+        'Puedes solicitar tu factura enviando un correo a: centrosacre@gmail.com',
+        'Envíanos tu Constancia de situación Fiscal y en asunto pon: Factura'
+    ].join('\n\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
 
 const flowCancelar = addKeyword(['cancelar', 'baja'])
     .addAnswer([
@@ -100,6 +96,18 @@ const flowCancelar = addKeyword(['cancelar', 'baja'])
         '⚠️ Ten en cuenta que al cancelar tu cita puede interrumpirse la continuidad de tu tratamiento, ya que el tiempo de espera para reagendar es de aproximadamente 2 semanas.',
         'Gracias por tu comprensión 💗'
     ].join('\n\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
+
+// --- NUEVO: VAS TARDE (Opción 10) ---
+const flowTarde = addKeyword(['tarde', 'retraso', 'llegar'])
+    .addAnswer([
+        '😢 Ntp! Entendemos perfecto 👌',
+        '',
+        '📅  Puedes indicarnos fecha y hora de tu cita para cancelar.',
+        '',
+        '😥 Solo recuerda que al perder esta cita el re-agendarla implica tiempo de espera.',
+        '☹️ Te compartimos el link para que te reagendes directamente:',
+        'https://centrosacre.com/solicitudCitas?cc=yuwE3pdEW3'
+    ].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
 
 const flowHorarios = addKeyword(['horarios'])
     .addAnswer([
@@ -155,9 +163,8 @@ const flowSucursales = addKeyword(['sucursales', 'ubicacion'])
     ].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
 
 // --- SUBFLUJOS DE SERVICIOS ---
-// Estos van antes de flowServicios
 const flowPostServicio = addKeyword('INTERNAL_POST_SERVICE')
-    .addAnswer('Si necesitas información sobre otro servicio cuéntanos sobre cual estas interesado y te proporcionaremos información o te recomendamos llamarnos 📞 para darte atención más personalizada 💬✨',
+    .addAnswer('Si necesitas información sobre otro servicio cuéntanos sobre cual estas interesado y te proporcionaremos información o te recomendamos llamarnos 📞 para darte atención más personalizada 💬✨\n\n*(Por favor, selecciona el número o el botón de lo que desees hacer)*',
     { capture: true, buttons: [{ body: 'Agendar Cita' }, { body: 'Ir al Menú' }] }, 
     async (ctx, { gotoFlow }) => {
         if (ctx.body.includes('Agendar')) return gotoFlow(flowAgendar)
@@ -218,9 +225,15 @@ const flowMenu = addKeyword(['Menu', 'menu', 'menú'])
         '6️⃣ Cancelar cita ❌',
         '7️⃣ Solicitar factura 🧾',
         '8️⃣ ¿Quiénes somos? 💫',
-        '9️⃣ Hablar con un asesor 👩‍💻'
+        '9️⃣ Hablar con un asesor 👩‍💻',
+        '1️⃣0️⃣ Vas tarde 🏃‍♀️'
     ].join('\n'), { capture: true }, async (ctx, { gotoFlow, fallBack }) => {
+        // Lógica corregida para la opción 10
         const op = ctx.body.trim();
+        
+        // Verificar 10 primero para evitar conflicto con 1
+        if(['10', 'diez', 'tarde', 'vas tarde'].some(x => op.includes(x))) return gotoFlow(flowTarde);
+        
         if(['1', 'servicio', 'servicios'].some(x => op.includes(x))) return gotoFlow(flowServicios);
         if(['2', 'sucursales', 'ubicacion'].some(x => op.includes(x))) return gotoFlow(flowSucursales);
         if(['3', 'agendar', 'cita'].some(x => op.includes(x))) return gotoFlow(flowAgendar);
@@ -230,8 +243,10 @@ const flowMenu = addKeyword(['Menu', 'menu', 'menú'])
         if(['7', 'factura'].some(x => op.includes(x))) return gotoFlow(flowFactura);
         if(['8', 'quienes', 'somos'].some(x => op.includes(x))) return gotoFlow(flowNosotros);
         if(['9', 'asesor', 'humano'].some(x => op.includes(x))) return gotoFlow(flowAsesor);
+        
         return fallBack('⚠️ Opción no válida. Por favor escribe solo el número (ej: 1).');
     })
+    .addAnswer('*(Por favor, selecciona el número o el botón de lo que desees hacer)*')
 
 const flowFormulario = addKeyword(['formulario_registro'])
     .addAnswer([
@@ -260,13 +275,14 @@ const flowPrincipal = addKeyword(EVENTS.WELCOME)
         if(ctx.body.toLowerCase() === 'si') return gotoFlow(flowFormulario);
         return gotoFlow(flowMenu);
     })
+    .addAnswer('*(Por favor, selecciona el número o el botón de lo que desees hacer)*')
 
 const main = async () => {
     const adapterDB = new MemoryDB()
     const adapterFlow = createFlow([
         flowPrincipal, flowFormulario, flowMenu, flowServicios, flowDescripcionServicios, 
         flowPostServicio, flowSucursales, flowAgendar, flowPrecios, flowHorarios, 
-        flowCancelar, flowFactura, flowNosotros, flowAsesor, flowContinuar, 
+        flowCancelar, flowTarde, flowFactura, flowNosotros, flowAsesor, flowContinuar, 
         flowDespedida, flowHumano 
     ])
     
