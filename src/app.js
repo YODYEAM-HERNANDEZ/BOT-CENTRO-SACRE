@@ -21,25 +21,25 @@ const registrarMensaje = (telefono, role, body, mediaUrl = null) => {
     if (!baseDatosChats[telefono]) baseDatosChats[telefono] = []
     const timestamp = Date.now()
     
-    // Detectar tipo de mensaje
     let type = 'text';
+    // Lógica inteligente: Si hay URL, es multimedia. Si es texto, se queda como texto.
     if (mediaUrl) {
-        // Si tiene URL, asumimos que es archivo o imagen
         if (mediaUrl.match(/\.(jpeg|jpg|gif|png)$/i)) type = 'image';
         else type = 'file';
-    } else if (body.includes('_event_')) {
-        // Si es un evento sin URL capturada, lo marcamos como sistema para que no ensucie
-        type = 'system';
+    } else if (body && body.includes('_event_')) {
+        // Solo ocultamos el texto si es basura del sistema
+        if(body.includes('image')) type = 'image';
+        else if(body.includes('document')) type = 'file';
+        else type = 'system'; 
     }
 
-    // Solo guardamos si no es un evento vacío raro
     baseDatosChats[telefono].push({ role, body, timestamp, type, mediaUrl })
     
     if (role === 'cliente') chatMetadata[telefono].unread += 1
     if (baseDatosChats[telefono].length > 300) baseDatosChats[telefono].shift()
 }
 
-// --- FLUJOS (Sin cambios, tal cual los tienes) ---
+// --- TUS FLUJOS ORIGINALES ---
 const flowHumano = addKeyword('INTERNAL_HUMAN_MODE')
     .addAction(async (ctx) => console.log(`Usuario ${ctx.from} en modo silencio.`))
     .addAnswer(null, { capture: true }, async (ctx, { gotoFlow, endFlow }) => {
@@ -48,7 +48,9 @@ const flowHumano = addKeyword('INTERNAL_HUMAN_MODE')
     })
 
 const flowDespedida = addKeyword('FLUJO_DESPEDIDA').addAnswer('¡Gracias por confiar en Centro Sacre! 🌿💖 Si nos necesitas de nuevo, solo escribe "Hola".')
-const flowContinuar = addKeyword('FLUJO_CONTINUAR').addAnswer('¿Deseas realizar otra consulta? 👇', { capture: true, buttons: [{ body: 'Ir al Menú' }, { body: 'Finalizar' }] }, async (ctx, { gotoFlow }) => { return ctx.body.includes('Menú') ? gotoFlow(flowMenu) : gotoFlow(flowDespedida) })
+const flowContinuar = addKeyword('FLUJO_CONTINUAR')
+    .addAnswer('¿Deseas realizar otra consulta? 👇', { capture: true, buttons: [{ body: 'Ir al Menú' }, { body: 'Finalizar' }] },
+        async (ctx, { gotoFlow }) => { return ctx.body.includes('Menú') ? gotoFlow(flowMenu) : gotoFlow(flowDespedida) })
 
 const flowAgendar = addKeyword(['agendar', 'cita']).addAnswer(['📅 *Para agendar:*', '1️⃣ Entra aquí: https://centrosacre.com/solicitudCitas?cc=yuwE3pdEW3'].join('\n\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
 const flowPostServicio = addKeyword('INTERNAL_POST_SERVICE').addAnswer('¿Te gustaría agendar tu cita o consultar otro servicio? 👇', { capture: true, buttons: [{ body: 'Agendar Cita' }, { body: 'Ver otro' }, { body: 'Ir al Menú' }] }, async (ctx, { gotoFlow }) => { if (ctx.body.includes('Agendar')) return gotoFlow(flowAgendar); if (ctx.body.includes('otro')) return gotoFlow(flowServicios); if (ctx.body.includes('Menú')) return gotoFlow(flowMenu); return gotoFlow(flowDespedida) })
@@ -207,12 +209,9 @@ const main = async () => {
         catch (e) { res.end('Error: Falta public/index.html'); }
     })
 
-    // --- AQUÍ ESTÁ LA MAGIA PARA LOS ARCHIVOS ---
     provider.on('message', (payload) => {
-        // Intentamos sacar la URL de donde sea que Meta la mande
+        // Detectar URL de archivo
         let mediaUrl = payload.url || payload?.message?.imageMessage?.url || payload?.message?.documentMessage?.url || null;
-        
-        // Si no hay URL pero el body es raro, intentamos ver si el payload tiene file
         if (!mediaUrl && payload.file) mediaUrl = payload.file;
 
         registrarMensaje(payload.from, 'cliente', payload.body, mediaUrl)
