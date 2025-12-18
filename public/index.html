@@ -99,7 +99,8 @@
             { title: "Condesa (7:00pm Andrea)", text: `Hola buen dia ✨\nMe comunico para confirmar su cita de mañana en Condesa a las 07:00pm con la fisioterapeuta Andrea Quintero ☀️\nEn Centro Sacre manejamos una penalización si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda que tiene la fisioterapeuta ya que es casi imposible que otra paciente ocupe el espacio debido a la precipitación y por respeto al tiempo de la fisioterapeuta.` },
             { title: "Condesa (8:00am Nalleli)", text: `Hola buenos dias ✨\nMe comunico para confirmar su cita de mañana en *Condesa* a las 08:00am con la fisioterapeuta *Nalleli Silva* ☀️\nEn Centro Sacre manejamos una *penalización* si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda que tiene la fisioterapeuta ya que es casi imposible que otra paciente ocupe el espacio debido a la precipitación y por respeto al tiempo de la fisioterapeuta.` },
             { title: "Condesa (7:00am Andrea - 1ra Vez)", text: `Hola 👋\nMe comunico para confirmar su cita de mañana en Condesa a las 07:00am con la fisioterapeuta Andrea Quintero ☀️\n\nAquí algunos datos a tener en cuenta para tu consulta de primera vez 🪄\n\n💫Te pedimos llegar 15 min antes de tu consulta para firma de consentimiento informado 😊\n\n💫Te compartimos nuestra dirección en condesa ✌️\n💫 Baja California 354 hipódromo condesa\n💫 Contamos con un lugar de estacionamiento si está libre puedes utilizarlo con mucho gusto 🚗\n\n💫 Aquí el link con nuestra dirección 👇\n🔝 https://maps.app.goo.gl/VibfPG6iFyFtMv6D7\n💫 Manejamos una penalización si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda que tiene la fisioterapeuta.\n💫 Ven con ropa cómoda o puedes traer ropa de deporte en una maletita 😉\n\nGracias por confiar en Centro Sacre 🫶` },
-            { title: "Santa Fe (9:00am Grecia - 1ra Vez)", text: `Hola 👋\nMe comunico para confirmar su cita del día mañana en Santa Fe a las 9:00am con la fisioterapeuta Grecia Zapata ☀️\n\nAquí algunos datos a tener en cuenta para tu consulta de primera vez 🪄\n\n💫Te pedimos llegar 15 min antes de tu consulta para firma de consentimiento informado 😊\n\n💫Aquí nuestra dirección en Santa Fe ✌️\n💫 Vasco de Quiroga 4299, Ciudad de México, Distrito Federal 05370local 203 arriba del Oxxo en aserrin\n💫 Contamos con estacionamiento en la plaza 🚗\n\n💫 Aquí el link con nuestra dirección 👇\n🔝 Usa Waze para conducir a Centro sacre Mx - Centro Infinito , Vasco de Quiroga, 4299, Ciudad de México: https://waze.com/ul/h9g3qheze0\n\n💫 Manejamos una penalización si las cancelaciones no se realizan con 24 de antelación 🙏.\n\nGracias por confiar en Centro Sacre 🫶` }
+            { title: "Santa Fe (9:00am Grecia - 1ra Vez)", text: `Hola 👋\nMe comunico para confirmar su cita del día mañana en Santa Fe a las 9:00am con la fisioterapeuta Grecia Zapata ☀️\n\nAquí algunos datos a tener en cuenta para tu consulta de primera vez 🪄\n\n💫Te pedimos llegar 15 min antes de tu consulta para firma de consentimiento informado 😊\n\n💫Aquí nuestra dirección en Santa Fe ✌️\n💫 Vasco de Quiroga 4299, Ciudad de México, Distrito Federal 05370local 203 arriba del Oxxo en aserrin\n💫 Contamos con estacionamiento en la plaza 🚗\n\n💫 Aquí el link con nuestra dirección 👇\n🔝 Usa Waze para conducir a Centro sacre Mx - Centro Infinito , Vasco de Quiroga, 4299, Ciudad de México: https://waze.com/ul/h9g3qheze0\n\n💫 Manejamos una penalización si las cancelaciones no se realizan con 24 de antelación 🙏.\n\nGracias por confiar en Centro Sacre 🫶` },
+            { title: "Reagendar (Link)", text: `Te compartimos el link para que te reagendes directamente:\nhttps://centrosacre.com/solicitudCitas?cc=yuwE3pdEW3` }
         ];
         
         function init() {
@@ -199,28 +200,36 @@
                                 ${starIcon} ${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
                             </div>
                             <div class="msg-actions">
-                                <button onclick="msgAction(${m.timestamp}, 'star')" title="Destacar"><i class="fas fa-star text-yellow-500"></i></button>
-                                <button onclick="msgAction(${m.timestamp}, 'pin')" title="Fijar"><i class="fas fa-thumbtack text-gray-500"></i></button>
+                                <button onclick="msgAction(${m.timestamp}, 'star', ${m.isStarred})" title="Destacar"><i class="fas fa-star text-yellow-500"></i></button>
+                                <button onclick="msgAction(${m.timestamp}, 'pin', ${m.isPinned})" title="Fijar"><i class="fas fa-thumbtack text-gray-500"></i></button>
                             </div>
                         </div>`
             }).join('');
         }
 
-        async function msgAction(timestamp, type) {
-            await fetch('/api/message-action', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, timestamp, type, action: 'add' }) }); 
+        async function msgAction(timestamp, type, isCurrentlyActive) {
+            const action = isCurrentlyActive ? 'remove' : 'add';
+            await fetch('/api/message-action', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, timestamp, type, action }) }); 
             loadMessages();
         }
 
-        // --- ARREGLO DE ETIQUETAS: AÑADIR/QUITAR ---
         async function toggleTag(tagName) {
-            // Verificar si el contacto ya tiene la etiqueta
             const contact = contactsCache.find(c => c.phone === currentPhone);
             const hasTag = contact && contact.tags && contact.tags.includes(tagName);
-            const action = hasTag ? 'remove' : 'add'; // Si la tiene, quitarla. Si no, ponerla.
+            const action = hasTag ? 'remove' : 'add';
 
             await fetch('/api/tags', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, tag: tagName, action }) }); 
             loadContacts(); 
-            setTimeout(() => openChat(currentPhone), 100); // Recargar cabecera
+            setTimeout(() => openChat(currentPhone), 100); 
+        }
+
+        async function togglePinChat() {
+            const contact = contactsCache.find(c => c.phone === currentPhone);
+            const currentStatus = contact ? contact.isChatPinned : false;
+            const action = currentStatus ? 'unpin' : 'pin';
+
+            await fetch('/api/pin-chat', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, action }) });
+            loadContacts();
         }
 
         async function toggleBot() {
@@ -243,11 +252,6 @@
             input.value = '';
             await fetch('/api/send', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, message: txt }) });
             loadMessages();
-        }
-
-        async function togglePinChat() {
-            await fetch('/api/pin-chat', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, action: 'pin' }) });
-            loadContacts();
         }
         
         async function editName() {
