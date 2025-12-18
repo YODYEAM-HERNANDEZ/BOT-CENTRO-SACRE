@@ -10,7 +10,7 @@
         body { background-color: #d1d7db; font-family: sans-serif; }
         .chat-bg { background-color: #efeae2; }
         
-        /* ESTILOS DE BURBUJAS */
+
         .msg-cliente { background-color: #ffffff; border-radius: 0px 10px 10px 10px; align-self: flex-start; }
         .msg-admin { background-color: #d9fdd3; border-radius: 10px 0px 10px 10px; align-self: flex-end; }
         .msg-bot { background-color: #e3e6e8; border-radius: 10px 10px 10px 0px; align-self: flex-end; font-size: 0.9em; border: 1px solid #ccc; font-style: italic; }
@@ -54,12 +54,13 @@
 
     <script>
         let currentPhone = null;
-        let isBotActive = true; // true = Bot responde, false = Humano
+        let isBotActive = true; 
 
         async function loadContacts() {
             const res = await fetch('/api/contacts');
             const contacts = await res.json();
             const list = document.getElementById('contacts-list');
+
             list.innerHTML = '';
 
             contacts.forEach(c => {
@@ -82,11 +83,13 @@
         }
 
         async function openChat(phone) {
+ 
+            document.getElementById('chat-history').innerHTML = '<div class="text-center p-4 text-gray-400">Cargando...</div>';
+            
             currentPhone = phone;
             document.getElementById('empty-state').style.display = 'none';
             document.getElementById('chat-title').innerText = phone;
             
-            // Check bot status
             const res = await fetch('/api/contacts');
             const data = await res.json();
             const contact = data.find(c => c.phone === phone);
@@ -100,7 +103,7 @@
             const res = await fetch(`/api/chat?phone=${currentPhone}`);
             const msgs = await res.json();
             const box = document.getElementById('chat-history');
-            box.innerHTML = '';
+            box.innerHTML = ''; 
 
             msgs.forEach(m => {
                 let cls = 'msg-cliente';
@@ -127,7 +130,7 @@
             if(!txt || !currentPhone) return;
             
             input.value = '';
-            // Optimistic update
+
             document.getElementById('chat-history').innerHTML += `
                 <div class="p-2 px-3 shadow-sm max-w-[75%] msg-admin align-self-end flex flex-col bg-[#d9fdd3] rounded-tl-lg rounded-bl-lg rounded-br-lg ml-auto">
                     <div class="text-sm">${txt}</div>
@@ -142,17 +145,13 @@
         }
 
         async function toggleBot() {
-            // Si el bot está activo (isBotActive=true), queremos apagarlo (active=false)
-            // La API recibe "active": true para prender, false para apagar.
-            const newStatus = !isBotActive; // Invertir estado actual
-            
+            const newStatus = !isBotActive; 
             const res = await fetch('/api/toggle-bot', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ phone: currentPhone, active: newStatus })
             });
             const data = await res.json();
-            // isHumanMode es true si el bot está apagado.
             updateButton(data.isHuman);
             loadContacts();
         }
@@ -161,7 +160,6 @@
             const btn = document.getElementById('btn-toggle');
             btn.style.display = 'block';
             
-            // isHumanMode = true significa BOT APAGADO
             if (isHumanMode) {
                 isBotActive = false;
                 btn.innerText = '🔴 BOT APAGADO (Click para encender)';
@@ -180,7 +178,7 @@
         setInterval(() => {
             loadContacts();
             if(currentPhone) loadMessages();
-        }, 3000); // Refresco cada 3 seg
+        }, 3000);
 
         loadContacts();
     </script>

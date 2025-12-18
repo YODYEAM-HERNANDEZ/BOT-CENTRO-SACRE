@@ -3,54 +3,43 @@ import { createBot, createProvider, createFlow, addKeyword, EVENTS } from '@buil
 import { MetaProvider } from '@builderbot/provider-meta'
 import { MemoryDB } from '@builderbot/bot'
 import { join } from 'path'
-import { readFileSync, existsSync } from 'fs'
+import { readFileSync } from 'fs'
 
-/**
- * 🧠 CEREBRO DEL ADMIN
- */
+
 const baseDatosChats = {} 
 const usuariosEnModoHumano = new Set()
 
-// Función para guardar mensajes en el historial
+
 const registrarMensaje = (telefono, role, body) => {
-    // role puede ser: 'cliente', 'bot', 'admin'
     if (!baseDatosChats[telefono]) baseDatosChats[telefono] = []
     baseDatosChats[telefono].push({
         role, 
         body,
         timestamp: Date.now()
     })
+    // Guardamos los últimos 100 mensajes por cliente
     if (baseDatosChats[telefono].length > 100) baseDatosChats[telefono].shift()
 }
 
-/**
- * 🛑 FLUJO SILENCIOSO (CÁRCEL PARA MODO HUMANO)
- * Si el usuario está en modo humano, cae aquí y se queda atrapado en un bucle infinito
- * escuchando pero sin recibir respuestas del bot, hasta que el admin lo libere.
- */
+
 const flowHumano = addKeyword('INTERNAL_HUMAN_MODE')
-    .addAction(async (ctx, { flowDynamic }) => {
-        console.log(`🔇 Usuario ${ctx.from} en modo silencio. Bot ignorando.`)
+    .addAction(async (ctx) => {
+        console.log(`🔇 Usuario ${ctx.from} en modo silencio.`)
     })
     .addAnswer(null, { capture: true }, async (ctx, { gotoFlow, endFlow }) => {
-        // Checamos si sigue castigado (Modo Humano activo)
         if (usuariosEnModoHumano.has(ctx.from)) {
-            // Lo volvemos a meter al bucle infinito
             return gotoFlow(flowHumano)
         }
-        // Si ya no está en la lista, lo liberamos
         return endFlow()
     })
 
-/**
- * BLOQUE 0: TUS FLUJOS DE NEGOCIO
- */
+
 const flowDespedida = addKeyword('FLUJO_DESPEDIDA')
     .addAnswer('¡Gracias por confiar en Centro Sacre! 🌿💖 Si nos necesitas de nuevo, solo escribe "Hola". ¡Bonito día!')
 
 const flowContinuar = addKeyword('FLUJO_CONTINUAR')
     .addAnswer(
-        '¿Deseas realizar alguna otra consulta o volver al menú? 👇',
+        '¿Deseas realizar alguna otra consulta o volver al menú? 👇\n\n*(Selecciona el botón de la opción deseada)*',
         { capture: true, buttons: [{ body: 'Ir al Menú' }, { body: 'Finalizar' }] },
         async (ctx, { gotoFlow }) => {
             if (ctx.body.includes('Menú')) return gotoFlow(flowMenu)
@@ -58,8 +47,9 @@ const flowContinuar = addKeyword('FLUJO_CONTINUAR')
         }
     )
 
+
 const flowPostServicio = addKeyword('INTERNAL_POST_SERVICE')
-    .addAnswer('¿Te gustaría agendar tu cita o consultar otro servicio? 👇',
+    .addAnswer('¿Te gustaría agendar tu cita o consultar otro servicio? 👇\n\n*(Selecciona el botón de la opción deseada)*',
         { capture: true, buttons: [{ body: 'Agendar Cita' }, { body: 'Ver otro' }, { body: 'Ir al Menú' }] },
         async (ctx, { gotoFlow }) => {
             if (ctx.body.includes('Agendar')) return gotoFlow(flowAgendar) 
@@ -70,9 +60,12 @@ const flowPostServicio = addKeyword('INTERNAL_POST_SERVICE')
     )
 
 const flowDescripcionServicios = addKeyword('INTERNAL_DESC_SERVICIOS')
-    .addAnswer('Escribe el número del servicio que te interesa para ver los detalles 👇', { capture: true },
+    .addAnswer('Escribe el número del servicio que te interesa para ver los detalles 👇\n\n*(Por favor, responde solo con el número, ej: 1)*', 
+        { capture: true },
         async (ctx, { flowDynamic, gotoFlow, fallBack }) => {
-            const opcion = ctx.body;
+
+            const opcion = ctx.body.trim();
+            
             const descripciones = {
                 '1': '🫶 *Fisioterapia:*\nTratamiento para aliviar dolor, recuperar movilidad y mejorar la función corporal.',
                 '2': '👐 *Osteopatía:*\nEvaluación y tratamiento integral observando el origen de la disfunción.',
@@ -86,12 +79,13 @@ const flowDescripcionServicios = addKeyword('INTERNAL_DESC_SERVICIOS')
                 '10': '🦵 *Drenaje:*\nDisminución de edema y retención.',
                 '11': '🙋🏻‍♂️ *Suelo Pélvico Masc:*\nTratamiento para disfunciones pélvicas en hombres.'
             };
+            
             const info = descripciones[opcion];
             if (info) {
                 await flowDynamic(info);
                 return gotoFlow(flowPostServicio);
             }
-            return fallBack('⚠️ Opción no válida. Escribe solo el número.');
+            return fallBack('⚠️ Opción no válida. Por favor escribe solo el número (ejemplo: 1).');
         }
     )
 
@@ -100,9 +94,12 @@ const flowServicios = addKeyword(['servicios', 'tratamientos'])
             '🌸 *Nuestros Servicios Especializados:*', '',
             '1️⃣ 🫶 Fisioterapia', '2️⃣ 👐 Osteopatía', '3️⃣ 🚶🏻‍♀️ RPG', '4️⃣ 🩷 Suelo Pélvico',
             '5️⃣ 👶 Osteopatía Pediátrica', '6️⃣ 🤰 Preparación Parto', '7️⃣ 🤱 Post embarazo',
-            '8️⃣ 🌿 Mastitis', '9️⃣ 🚑 Oncológica', '1️⃣0️⃣ 🦵 Drenaje linfático', '1️⃣1️⃣ 🙋🏻‍♂️ Suelo Pélvico Masc'
+            '8️⃣ 🌿 Mastitis', '9️⃣ 🚑 Oncológica', '1️⃣0️⃣ 🦵 Drenaje linfático', '1️⃣1️⃣ 🙋🏻‍♂️ Suelo Pélvico Masc',
+            '',
+            '*(Escribe el número del servicio)*'
         ].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowDescripcionServicios)
     )
+
 
 const flowAsesor = addKeyword(['asesor', 'humano'])
     .addAnswer([
@@ -110,7 +107,6 @@ const flowAsesor = addKeyword(['asesor', 'humano'])
             'Alguien te escribirá en breve. 🤗', '',
             '🕓 *Horario de Atención:*', 'Lunes a Viernes: 10am – 7pm', 'Sábados: 8am – 2pm'
         ].join('\n'), null, async (ctx, { gotoFlow }) => { 
-             // ACTIVAMOS MODO HUMANO AUTOMÁTICAMENTE
              usuariosEnModoHumano.add(ctx.from)
              return gotoFlow(flowHumano) 
         }
@@ -136,17 +132,19 @@ const flowTarde = addKeyword(['tarde', 'retraso', 'llegar'])
     )
 
 const flowHorarios = addKeyword(['horarios'])
-    .addAnswer('🕒 ¿Qué sede deseas consultar?', { capture: true, buttons: [{ body: 'Condesa' }, { body: 'Santa Fe' }] },
+    .addAnswer('🕒 ¿Qué sede deseas consultar? 👇\n\n*(Selecciona el botón de la opción deseada)*', 
+        { capture: true, buttons: [{ body: 'Condesa' }, { body: 'Santa Fe' }] },
         async (ctx, { flowDynamic, gotoFlow, fallBack }) => {
-            if (ctx.body.toLowerCase().includes('condesa')) {
+            const body = ctx.body.toLowerCase();
+            if (body.includes('condesa')) {
                 await flowDynamic('📍 *Condesa:* L-V 10am-8pm, Sab 8am-2pm')
                 return gotoFlow(flowContinuar)
             }
-            if (ctx.body.toLowerCase().includes('santa')) {
+            if (body.includes('santa')) {
                 await flowDynamic('📍 *Santa Fe:* L-V 8am-4pm, Sab 8am-2pm')
                 return gotoFlow(flowContinuar)
             }
-            return fallBack('Selecciona una opción válida.')
+            return fallBack('⚠️ Opción no válida. Selecciona uno de los botones.')
         }
     )
 
@@ -157,17 +155,19 @@ const flowAgendar = addKeyword(['agendar', 'cita'])
     .addAnswer(['📅 *Para agendar:*', '1️⃣ Entra aquí: https://centrosacre.com/solicitudCitas?cc=yuwE3pdEW3'].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
 
 const flowSucursales = addKeyword(['sucursales', 'ubicacion'])
-    .addAnswer('📍 ¿Qué sede buscas?', { capture: true, buttons: [{ body: 'Condesa' }, { body: 'Santa Fe' }] },
+    .addAnswer('📍 ¿Qué sede buscas? 👇\n\n*(Selecciona el botón de la opción deseada)*', 
+        { capture: true, buttons: [{ body: 'Condesa' }, { body: 'Santa Fe' }] },
         async (ctx, { flowDynamic, gotoFlow, fallBack }) => {
-            if (ctx.body.toLowerCase().includes('condesa')) {
+            const body = ctx.body.toLowerCase();
+            if (body.includes('condesa')) {
                 await flowDynamic(['📍 *Condesa*', 'Baja California 354', 'Mapa: https://maps.app.goo.gl/VibfPG6iFyFtMv6D7'].join('\n'))
                 return gotoFlow(flowContinuar)
             }
-            if (ctx.body.toLowerCase().includes('santa')) {
+            if (body.includes('santa')) {
                 await flowDynamic(['📍 *Santa Fe*', 'Vasco de Quiroga 4299', 'Mapa: https://waze.com/ul/h9g3qheze0'].join('\n'))
                 return gotoFlow(flowContinuar)
             }
-            return fallBack('Opción no válida.')
+            return fallBack('⚠️ Opción no válida. Selecciona uno de los botones.')
         }
     )
 
@@ -177,22 +177,28 @@ const flowMenu = addKeyword(['Menu', 'menu', 'menú'])
             '🙌 *Menú Principal*',
             '1️⃣ Servicios', '2️⃣ Sucursales 📍', '3️⃣ Agendar cita 📅', '4️⃣ Precios 💰',
             '5️⃣ Horarios 🕒', '6️⃣ Cancelar cita ❌', '7️⃣ Facturación 🧾', '8️⃣ ¿Quiénes somos?',
-            '9️⃣ Hablar con asesor 👩‍💻', '1️⃣0️⃣ Vas tarde a tu cita 🏃'
+            '9️⃣ Hablar con asesor 👩‍💻', '1️⃣0️⃣ Vas tarde a tu cita 🏃',
+            '',
+            '*(Por favor, responde solo con el número de la opción, ej: 1)*'
         ].join('\n'),
         { capture: true },
         async (ctx, { gotoFlow, fallBack }) => {
-            const op = ctx.body;
-            if (['1','uno'].includes(op)) return gotoFlow(flowServicios)
-            if (['2','dos'].includes(op)) return gotoFlow(flowSucursales)
-            if (['3','tres'].includes(op)) return gotoFlow(flowAgendar)
-            if (['4','cuatro'].includes(op)) return gotoFlow(flowPrecios)
-            if (['5','cinco'].includes(op)) return gotoFlow(flowHorarios)
-            if (['6','seis'].includes(op)) return gotoFlow(flowCancelar)
-            if (['7','siete'].includes(op)) return gotoFlow(flowFactura)
-            if (['8','ocho'].includes(op)) return gotoFlow(flowNosotros)
-            if (['9','nueve'].includes(op)) return gotoFlow(flowAsesor)
-            if (['10','diez','tarde'].includes(op)) return gotoFlow(flowTarde)
-            return fallBack('⚠️ Opción no válida.')
+
+            let op = ctx.body.trim().toLowerCase();
+            
+
+            if (['1','uno', 'servicio', 'servicios'].some(x => op.includes(x))) return gotoFlow(flowServicios)
+            if (['2','dos', 'sucursal'].some(x => op.includes(x))) return gotoFlow(flowSucursales)
+            if (['3','tres', 'agendar'].some(x => op.includes(x))) return gotoFlow(flowAgendar)
+            if (['4','cuatro', 'precio'].some(x => op.includes(x))) return gotoFlow(flowPrecios)
+            if (['5','cinco', 'horario'].some(x => op.includes(x))) return gotoFlow(flowHorarios)
+            if (['6','seis', 'cancelar'].some(x => op.includes(x))) return gotoFlow(flowCancelar)
+            if (['7','siete', 'factura'].some(x => op.includes(x))) return gotoFlow(flowFactura)
+            if (['8','ocho', 'somos'].some(x => op.includes(x))) return gotoFlow(flowNosotros)
+            if (['9','nueve', 'asesor'].some(x => op.includes(x))) return gotoFlow(flowAsesor)
+            if (['10','diez','tarde'].some(x => op.includes(x))) return gotoFlow(flowTarde)
+            
+            return fallBack('⚠️ Opción no válida. Por favor escribe solo el número (ej: 1).')
         }
     )
 
@@ -201,29 +207,27 @@ const flowFormulario = addKeyword(['formulario_registro'])
     .addAnswer('✅ ¡Registro completado!', null, async (_, { gotoFlow }) => gotoFlow(flowMenu))
 
 const flowPrincipal = addKeyword(EVENTS.WELCOME)
-    .addAction(async (ctx, { gotoFlow, endFlow }) => {
-        // 🚨 INTERCEPTOR DE ENTRADA: Si está en modo humano, lo mandamos a la cárcel (flowHumano)
+    .addAction(async (ctx, { gotoFlow }) => {
         if (usuariosEnModoHumano.has(ctx.from)) {
             return gotoFlow(flowHumano)
         }
     })
-    .addAnswer('¡Hola! 😊 Bienvenido a *Centro Sacre*. ¿Eres paciente de primera vez?', { capture: true, buttons: [{ body: 'Si' }, { body: 'No' }] },
+    .addAnswer('¡Hola! 😊 Bienvenido a *Centro Sacre*. ¿Eres paciente de primera vez? 👇\n\n*(Selecciona el botón de la opción deseada)*', 
+        { capture: true, buttons: [{ body: 'Si' }, { body: 'No' }] },
         async (ctx, { gotoFlow }) => {
             if (ctx.body.toLowerCase() === 'si') return gotoFlow(flowFormulario)
             return gotoFlow(flowMenu)
         }
     )
 
-/**
- * CONFIGURACIÓN PRINCIPAL
- */
+
 const main = async () => {
     const adapterDB = new MemoryDB()
     const adapterFlow = createFlow([
         flowPrincipal, flowFormulario, flowMenu, flowServicios, flowDescripcionServicios, 
         flowPostServicio, flowSucursales, flowAgendar, flowPrecios, flowHorarios, 
         flowCancelar, flowTarde, flowFactura, flowNosotros, flowAsesor, flowContinuar, 
-        flowDespedida, flowHumano // <--- Aquí está la cárcel
+        flowDespedida, flowHumano 
     ])
 
     const adapterProvider = createProvider(MetaProvider, {
@@ -233,15 +237,10 @@ const main = async () => {
         version: 'v20.0'
     })
 
-    // 🕵️‍♂️ INTERCEPTOR DE SALIDA (Para guardar lo que el BOT contesta)
-    // Guardamos la función original de enviar mensaje
+
     const originalSendText = adapterProvider.sendText.bind(adapterProvider)
-    
-    // Sobrescribimos la función para que primero guarde en el historial y luego envíe
     adapterProvider.sendText = async (number, message, options) => {
-        // Guardar como mensaje del BOT
         registrarMensaje(number, 'bot', message)
-        // Ejecutar el envío real
         return await originalSendText(number, message, options)
     }
 
@@ -251,9 +250,7 @@ const main = async () => {
         database: adapterDB,
     })
 
-    // ================= API PANEL =================
 
-    // 1. Obtener Contactos
     adapterProvider.server.get('/api/contacts', (req, res) => {
         const contactos = Object.keys(baseDatosChats).map(telefono => {
             const msgs = baseDatosChats[telefono]
@@ -270,7 +267,7 @@ const main = async () => {
         res.end(JSON.stringify(contactos))
     })
 
-    // 2. Obtener Chat
+
     adapterProvider.server.get('/api/chat', (req, res) => {
         const url = new URL(req.url, `http://${req.headers.host}`)
         const phone = url.searchParams.get('phone')
@@ -278,12 +275,11 @@ const main = async () => {
         res.end(JSON.stringify(baseDatosChats[phone] || []))
     })
 
-    // 3. Enviar Mensaje (ADMIN)
+
     adapterProvider.server.post('/api/send', async (req, res) => {
         const body = req.body || {}
         const { phone, message } = body
         if (phone && message) {
-            // Usamos la función original para NO duplicar el registro (ya lo registramos aquí como admin)
             await originalSendText(phone, message) 
             registrarMensaje(phone, 'admin', message)
             res.end(JSON.stringify({ status: 'ok' }))
@@ -292,19 +288,19 @@ const main = async () => {
         }
     })
 
-    // 4. Toggle Bot (APAGAR/PRENDER)
+
     adapterProvider.server.post('/api/toggle-bot', async (req, res) => {
         const body = req.body || {}
         const { phone, active } = body 
         if (active) {
-            usuariosEnModoHumano.delete(phone) // Prender Bot (Liberar de la cárcel)
+            usuariosEnModoHumano.delete(phone) 
         } else {
-            usuariosEnModoHumano.add(phone) // Apagar Bot (Meter a la cárcel)
+            usuariosEnModoHumano.add(phone)
         }
         res.end(JSON.stringify({ status: 'ok', isHuman: usuariosEnModoHumano.has(phone) }))
     })
 
-    // 5. HTML
+
     adapterProvider.server.get('/panel', (req, res) => {
         try {
             const html = readFileSync(join(process.cwd(), 'public', 'index.html'), 'utf8')
@@ -312,11 +308,9 @@ const main = async () => {
         } catch (e) { res.end('Error: Falta public/index.html') }
     })
 
-    // Interceptor de ENTRADA (Cliente)
+
     provider.on('message', (payload) => {
         registrarMensaje(payload.from, 'cliente', payload.body)
-        
-        // Auto-detectar petición de asesor
         if (payload.body.includes('9') || payload.body.toLowerCase().includes('asesor')) {
             usuariosEnModoHumano.add(payload.from)
         }
