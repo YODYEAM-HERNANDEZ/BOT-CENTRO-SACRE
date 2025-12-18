@@ -2,20 +2,42 @@ import 'dotenv/config'
 import { createBot, createProvider, createFlow, addKeyword, EVENTS } from '@builderbot/bot'
 import { MetaProvider } from '@builderbot/provider-meta'
 import { MemoryDB } from '@builderbot/bot'
-// --- NUEVOS IMPORTS PARA EL PANEL ADMIN ---
+// --- IMPORTS PARA EL PANEL ADMIN ---
 import { join } from 'path'
-import { readFileSync } from 'fs'
+import { readFileSync, existsSync } from 'fs'
 
 /**
- * MEMORIA SIMPLE PARA EL HISTORIAL DEL CHAT (PANEL ADMIN)
- * Guarda los últimos 50 mensajes para mostrarlos en tu web.
+ * 🧠 CEREBRO DEL ADMIN (VARIABLES GLOBALES)
  */
-const historialMensajes = []
+// Aquí guardamos los chats separados por número: { "52155...": [mensajes] }
+const baseDatosChats = {} 
+// Aquí guardamos quién está en "Modo Humano" (Bot apagado): Set("52155...")
+const usuariosEnModoHumano = new Set()
 
-const guardarMensaje = (from, body, number) => {
-    historialMensajes.push({ from, body, number, timestamp: Date.now() })
-    if (historialMensajes.length > 50) historialMensajes.shift() 
+// Función para guardar mensajes en la "memoria" del panel
+const registrarMensaje = (telefono, from, body) => {
+    if (!baseDatosChats[telefono]) baseDatosChats[telefono] = []
+    baseDatosChats[telefono].push({
+        from, // 'bot', 'cliente' o 'admin'
+        body,
+        timestamp: Date.now()
+    })
+    // Guardamos solo los últimos 100 mensajes por cliente para no llenar la memoria
+    if (baseDatosChats[telefono].length > 100) baseDatosChats[telefono].shift()
 }
+
+/**
+ * 🛑 FLUJO SILENCIOSO (HUMAN MODE)
+ * Este flujo atrapa al usuario cuando el bot está "apagado" para él.
+ */
+const flowHumano = addKeyword('INTERNAL_HUMAN_MODE')
+    .addAction(async (ctx, { provider }) => {
+        console.log(`🔇 Usuario ${ctx.from} entró en modo silencio (Humano).`)
+    })
+    .addAnswer(null, { capture: true }, async (ctx, { flowDynamic }) => {
+        // Loop infinito: Escucha pero no responde nada
+        return
+    })
 
 /**
  * BLOQUE 0: FLUJOS DE NAVEGACIÓN Y CIERRE
@@ -129,18 +151,17 @@ const flowAsesor = addKeyword(['asesor', 'humano'])
     .addAnswer(
         [
             '¡Entendido! 💬 He notificado a nuestro equipo para darte atención personal.',
-            'Alguien te escribirá en breve. 🤗',
+            'Alguien te escribirá en breve y yo me quedaré en silencio para que puedan hablar. 🤐',
             '',
             '🕓 *Horario de Atención:*',
             'Lunes a Viernes: 10:00 a.m. – 7:00 p.m.',
             'Sábados: 8:00 a.m. – 2:00 p.m.',
-            '',
-            '📞 Si es urgente, llámanos directamente para comunicarte con una asistente.'
         ].join('\n'),
         null,
-        async (ctx, { provider, gotoFlow }) => { 
-             // Opcional: Aquí podrías mandar una alerta extra a tu celular si quisieras
-             return gotoFlow(flowContinuar) 
+        async (ctx, { gotoFlow }) => { 
+             // Al entrar aquí, activamos el modo humano automáticamente
+             usuariosEnModoHumano.add(ctx.from)
+             return gotoFlow(flowHumano) 
         }
     )
 
@@ -420,6 +441,13 @@ const flowFormulario = addKeyword(['formulario_registro'])
     )
 
 const flowPrincipal = addKeyword(EVENTS.WELCOME)
+    .addAction(async (ctx, { gotoFlow, endFlow }) => {
+        // 🚨 CHEQUEO DE MODO HUMANO:
+        // Si el usuario está en la lista de "Bot Apagado", lo mandamos directo al silencio.
+        if (usuariosEnModoHumano.has(ctx.from)) {
+            return gotoFlow(flowHumano)
+        }
+    })
     .addAnswer(
         [
             '¡Hola! 😊 Te damos la bienvenida a *Centro Sacre* 🩷.',
@@ -448,6 +476,7 @@ const flowPrincipal = addKeyword(EVENTS.WELCOME)
 const main = async () => {
     const adapterDB = new MemoryDB()
     
+    // AGREGA flowHumano A LA LISTA DE FLUJOS
     const adapterFlow = createFlow([
         flowPrincipal,
         flowFormulario,
@@ -467,7 +496,8 @@ const main = async () => {
         flowNosotros,
         flowAsesor,
         flowContinuar,
-        flowDespedida
+        flowDespedida,
+        flowHumano // <--- IMPORTANTE: El flujo silencioso agregado aquí
     ])
 
     const adapterProvider = createProvider(MetaProvider, {
@@ -483,51 +513,91 @@ const main = async () => {
         database: adapterDB,
     })
 
-    // ==========================================================
-    // INICIO DEL CEREBRO DEL PANEL DE ADMINISTRADOR (NUEVO)
-    // ==========================================================
+    // ==========================================
+    // 🌐 API PARA TU PANEL "WHATSAPP WEB"
+    // ==========================================
 
-    // 1. API para que la página HTML vea el historial
-    adapterProvider.server.get('/admin/history', (req, res) => {
+    // 1. Obtener lista de clientes (Contactos)
+    adapterProvider.server.get('/api/contacts', (req, res) => {
+        const contactos = Object.keys(baseDatosChats).map(telefono => {
+            const msgs = baseDatosChats[telefono]
+            const ultimoMsg = msgs[msgs.length - 1]
+            return {
+                phone: telefono,
+                lastMessage: ultimoMsg ? ultimoMsg.body : '',
+                timestamp: ultimoMsg ? ultimoMsg.timestamp : 0,
+                isHumanMode: usuariosEnModoHumano.has(telefono) // Estado del bot
+            }
+        })
+        // Ordenar por el más reciente
+        contactos.sort((a, b) => b.timestamp - a.timestamp)
+        
         res.writeHead(200, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify(historialMensajes))
+        res.end(JSON.stringify(contactos))
     })
 
-    // 2. API para que tú envíes mensajes desde el panel
-    adapterProvider.server.post('/admin/send', async (req, res) => {
+    // 2. Obtener historial de un cliente específico
+    adapterProvider.server.get('/api/chat', (req, res) => {
+        // Forma simple de leer params
+        const url = new URL(req.url, `http://${req.headers.host}`)
+        const phone = url.searchParams.get('phone')
+        
+        const historial = baseDatosChats[phone] || []
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify(historial))
+    })
+
+    // 3. Enviar mensaje (Admin a Cliente)
+    adapterProvider.server.post('/api/send', async (req, res) => {
         const body = req.body || {}
         const { phone, message } = body
         
         if (phone && message) {
             await adapterProvider.sendText(phone, message)
-            guardarMensaje('bot', message, phone) // Guardar también lo que respondes
-            res.end('Enviado')
+            registrarMensaje(phone, 'admin', message)
+            res.end(JSON.stringify({ status: 'ok' }))
         } else {
-            res.end('Error: Faltan datos')
+            res.end(JSON.stringify({ status: 'error' }))
         }
     })
 
-    // 3. Ruta para mostrar tu archivo HTML
+    // 4. PRENDER/APAGAR BOT (Toggle Human Mode)
+    adapterProvider.server.post('/api/toggle-bot', async (req, res) => {
+        const body = req.body || {}
+        const { phone, active } = body // active = true (Prender bot), false (Apagar bot/Modo humano)
+
+        if (active) {
+            usuariosEnModoHumano.delete(phone)
+        } else {
+            usuariosEnModoHumano.add(phone)
+        }
+        
+        res.end(JSON.stringify({ status: 'ok', isHuman: usuariosEnModoHumano.has(phone) }))
+    })
+
+    // 5. Servir el HTML (Tu Panel)
     adapterProvider.server.get('/panel', (req, res) => {
-        try {
-            const pathHtml = join(process.cwd(), 'public', 'index.html')
+        const pathHtml = join(process.cwd(), 'public', 'index.html')
+        if (existsSync(pathHtml)) {
             const html = readFileSync(pathHtml, 'utf8')
             res.end(html)
-        } catch (e) {
-            res.end('Error: No has creado el archivo public/index.html')
+        } else {
+            res.end('<h1>Error: No se encuentra public/index.html</h1>')
         }
     })
 
-    // 4. Escuchar y guardar todo lo que llega para que lo veas en el panel
+    // ESPIA: Interceptamos todos los mensajes que llegan
     provider.on('message', (payload) => {
-        guardarMensaje('cliente', payload.body, payload.from)
-        console.log(`\n🟢 MENSAJE DE: ${payload.name} (+${payload.from})`)
-        console.log(`💬 DICE: ${payload.body}`)
+        registrarMensaje(payload.from, 'cliente', payload.body)
+        console.log(`📨 Mensaje de ${payload.from}: ${payload.body}`)
+        
+        // AUTO-DETECCION DE HUMANO
+        // Si el usuario escribió "9" o "asesor", apagamos el bot automáticamente para que tú entres
+        if (payload.body.includes('9') || payload.body.toLowerCase().includes('asesor')) {
+            usuariosEnModoHumano.add(payload.from)
+            console.log(`🚨 Usuario ${payload.from} solicitó asesor -> Bot Apagado automáticamente`)
+        }
     })
-
-    // ==========================================================
-    // FIN DEL CEREBRO DEL PANEL
-    // ==========================================================
 
     const PORT = process.env.PORT || 3008
     httpServer(PORT)
