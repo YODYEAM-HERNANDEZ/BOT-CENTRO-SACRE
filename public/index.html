@@ -3,98 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sacre CRM</title>
+    <title>Sacre CRM Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background-color: #d1d7db; font-family: sans-serif; }
+        body { background-color: #d1d7db; font-family: 'Segoe UI', sans-serif; }
         .chat-bg { background-color: #efeae2; }
         
-
-        .msg-cliente { background-color: #ffffff; border-radius: 0px 10px 10px 10px; align-self: flex-start; }
-        .msg-admin { background-color: #d9fdd3; border-radius: 10px 0px 10px 10px; align-self: flex-end; }
-        .msg-bot { background-color: #e3e6e8; border-radius: 10px 10px 10px 0px; align-self: flex-end; font-size: 0.9em; border: 1px solid #ccc; font-style: italic; }
+        .msg-bubble { position: relative; padding: 8px 12px; border-radius: 8px; max-width: 75%; margin-bottom: 4px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+        .msg-cliente { background-color: #ffffff; align-self: flex-start; border-top-left-radius: 0; }
+        .msg-admin { background-color: #d9fdd3; align-self: flex-end; border-top-right-radius: 0; }
+        .msg-bot { background-color: #f0f2f5; align-self: flex-end; font-size: 0.9em; font-style: italic; border: 1px dashed #ccc; }
         
-        .active-chat { background-color: #e9edef; border-left: 4px solid #008069; }
+        .msg-actions { display: none; position: absolute; top: 0; right: 0; padding: 2px; background: rgba(255,255,255,0.8); border-radius: 4px; }
+        .msg-bubble:hover .msg-actions { display: flex; gap: 5px; }
+        
+        .active-chat { background-color: #f0f2f5; border-left: 4px solid #008069; }
+        .badge-tag { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-right: 2px; text-transform: uppercase; }
+        .tag-blue { background-color: #cce5ff; color: #004085; } /* Factura/Recibo */
+        .tag-red { background-color: #f8d7da; color: #721c24; } /* Urgente */
+        .tag-green { background-color: #d4edda; color: #155724; } /* Confirmado */
+        
+        .unread-dot { height: 10px; width: 10px; background-color: #25d366; border-radius: 50%; display: inline-block; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden">
 
-    <div class="w-1/3 bg-white border-r flex flex-col min-w-[300px]">
-        <div class="bg-[#f0f2f5] p-4 flex justify-between items-center border-b h-16">
-            <div class="font-bold text-gray-700">Centro Sacre CRM</div>
-            <div onclick="loadContacts()" class="cursor-pointer text-gray-500"><i class="fas fa-sync"></i></div>
+    <div class="w-1/3 bg-white border-r flex flex-col min-w-[320px]">
+        <div class="bg-[#f0f2f5] p-3 flex justify-between items-center border-b h-16">
+            <div class="font-bold text-gray-700 flex items-center gap-2">
+                Centro Sacre CRM
+            </div>
+            <div class="flex gap-3 text-gray-600">
+                <button onclick="newChat()" title="Nuevo Chat"><i class="fas fa-plus-circle text-lg hover:text-green-600"></i></button>
+                <button onclick="downloadBackup()" title="Respaldo"><i class="fas fa-download text-lg hover:text-blue-600"></i></button>
+                <button onclick="loadContacts()" title="Refrescar"><i class="fas fa-sync text-lg hover:text-gray-800"></i></button>
+            </div>
         </div>
         <div id="contacts-list" class="flex-1 overflow-y-auto"></div>
     </div>
 
     <div class="flex-1 flex flex-col bg-[#efeae2] relative min-w-[400px]">
         <div id="empty-state" class="absolute inset-0 z-10 bg-[#f0f2f5] flex flex-col justify-center items-center">
-            <h1 class="text-2xl text-gray-600">Selecciona un chat</h1>
+            <h1 class="text-3xl text-gray-400 font-light">Centro Sacre</h1>
+            <p class="text-gray-500 mt-2">Selecciona un chat para comenzar</p>
         </div>
 
-        <div class="bg-[#f0f2f5] p-3 flex justify-between items-center h-16 border-b z-20">
+        <div class="bg-[#f0f2f5] p-3 flex justify-between items-center h-16 border-b z-20 shadow-sm">
             <div class="flex items-center">
-                <i class="fas fa-user-circle text-3xl text-gray-400 mr-3"></i>
+                <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-white mr-3"><i class="fas fa-user"></i></div>
                 <div>
-                    <div id="chat-title" class="font-bold text-gray-800">...</div>
+                    <div class="flex items-center gap-2">
+                        <div id="chat-title" class="font-bold text-gray-800 cursor-pointer hover:underline" onclick="editName()">...</div>
+                        <div id="header-tags" class="flex gap-1"></div>
+                    </div>
                     <div id="chat-status" class="text-xs text-gray-500">...</div>
                 </div>
             </div>
-            <button id="btn-toggle" onclick="toggleBot()" class="hidden px-4 py-2 rounded text-sm font-bold shadow"></button>
+            <div class="flex items-center gap-3">
+                <button onclick="openTagMenu()" class="text-gray-600 hover:text-blue-600" title="Etiquetas"><i class="fas fa-tag"></i></button>
+                <button onclick="toggleBot()" id="btn-toggle" class="hidden px-3 py-1 rounded text-xs font-bold shadow transition"></button>
+            </div>
         </div>
 
-        <div id="chat-history" class="flex-1 overflow-y-auto p-4 chat-bg flex flex-col space-y-2"></div>
+        <div id="chat-history" class="flex-1 overflow-y-auto p-4 chat-bg flex flex-col gap-1"></div>
 
-        <div class="bg-[#f0f2f5] p-3 flex gap-2">
-            <input type="text" id="msg-input" class="flex-1 p-3 rounded-lg border-none focus:outline-none" placeholder="Escribe un mensaje..." onkeypress="handleEnter(event)">
-            <button onclick="sendMsg()" class="text-[#008069] text-2xl px-3"><i class="fas fa-paper-plane"></i></button>
+        <div class="bg-[#f0f2f5] p-3 flex gap-2 items-end">
+            <button onclick="openQuickReplies()" class="text-gray-500 hover:text-yellow-600 p-2 text-xl" title="Respuestas Rápidas">⚡</button>
+            
+            <textarea id="msg-input" rows="1" class="flex-1 p-3 rounded-lg border-none focus:outline-none resize-y" placeholder="Escribe un mensaje..." onkeypress="handleEnter(event)"></textarea>
+            
+            <button onclick="sendMsg()" class="text-[#008069] text-2xl px-3 pb-2"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <div id="modal-quick" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+        <div class="bg-white rounded-lg p-6 w-[500px] max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between mb-4">
+                <h2 class="font-bold text-lg">⚡ Respuestas Rápidas</h2>
+                <button onclick="closeModal('modal-quick')" class="text-red-500">✖</button>
+            </div>
+            <div class="space-y-2" id="quick-list"></div>
+        </div>
+    </div>
+
+    <div id="modal-tags" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+        <div class="bg-white rounded-lg p-6 w-80">
+            <h2 class="font-bold text-lg mb-4">🏷️ Gestionar Etiquetas</h2>
+            <div class="space-y-2">
+                <button onclick="toggleTag('Solicita Factura')" class="w-full text-left p-2 hover:bg-blue-50 border rounded text-blue-800 border-blue-200">🟦 Solicita Factura</button>
+                <button onclick="toggleTag('Solicita Recibo')" class="w-full text-left p-2 hover:bg-blue-50 border rounded text-blue-800 border-blue-200">🟦 Solicita Recibo</button>
+                <button onclick="toggleTag('Urgente')" class="w-full text-left p-2 hover:bg-red-50 border rounded text-red-800 border-red-200">🟥 Urgente</button>
+                <button onclick="toggleTag('Cita Confirmada')" class="w-full text-left p-2 hover:bg-green-50 border rounded text-green-800 border-green-200">🟩 Cita Confirmada</button>
+            </div>
+            <button onclick="closeModal('modal-tags')" class="mt-4 w-full bg-gray-200 p-2 rounded">Cerrar</button>
         </div>
     </div>
 
     <script>
+        // TUS RESPUESTAS RÁPIDAS
+        const QUICK_REPLIES = [
+            { title: "Confirmar Ana (11:00am)", text: "Hola buenas tardes✨\nMe comunico para confirmar su cita de mañana en Condesa a las 11:00am con la fisioterapeuta Ana Huacuja☀️" },
+            { title: "Confirmar Andrea (7:00pm)", text: "Hola buen día✨\nMe comunico para confirmar su cita de mañana en Condesa a las 07:00pm con la fisioterapeuta Andrea Quintero ☀️" },
+            { title: "Confirmar Nalleli (8:00am)", text: "Hola buenos dias✨\nMe comunico para confirmar su cita de mañana en Condesa a las 08:00am con la fisioterapeuta Nalleli Silva☀️" },
+            { title: "Confirmar Grecia (9:00am)", text: "Hola 👋\nMe comunico para confirmar su cita del día mañana en Santa Fe a las 9:00am con la fisioterapeuta Grecia Zapata☀️" },
+            { title: "Confirmar General (5:00pm)", text: "Hola buenos dias✨\nMe comunico para confirmar su cita de mañana en Condesa a las 5:00pm ☀️" },
+            { title: "Info 1ra Vez Condesa", text: "Hola 👋\nAquí algunos datos a tener en cuenta para tu consulta de primera vez 🪄\n\n💫Te pedimos llegar 15 min antes...\n💫Dirección: Baja California 354 hipódromo condesa\n💫Ubicación: https://maps.app.goo.gl/VibfPG6iFyFtMv6D7" },
+            { title: "Info 1ra Vez Santa Fe", text: "Hola 👋\nAquí algunos datos a tener en cuenta para tu consulta de primera vez 🪄\n\n💫Te pedimos llegar 15 min antes...\n💫Dirección: Vasco de Quiroga 4299, Local 203\n💫Waze: https://waze.com/ul/h9g3qheze0" },
+            { title: "Política Cancelación", text: "En Centro Sacre manejamos una penalización si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda. Agradecemos su comprensión 🙏" },
+            { title: "Ubicación Santa Fe", text: "Te compartimos nuestra dirección en Santa Fe ✌️\n\n💫 Vasco de Quiroga 4299, Local 203 (arriba del Oxxo)\n💫 Estacionamiento en la plaza 🚗\n💫 Waze: https://waze.com/ul/h9g3qheze0\n\n¡Conduce con precaución! 😃" }
+        ];
+
         let currentPhone = null;
         let isBotActive = true; 
+        let contactsCache = [];
+        let autoScroll = true;
 
-        async function loadContacts() {
-            const res = await fetch('/api/contacts');
-            const contacts = await res.json();
-            const list = document.getElementById('contacts-list');
-
-            list.innerHTML = '';
-
-            contacts.forEach(c => {
-                const active = currentPhone === c.phone ? 'active-chat' : 'hover:bg-gray-100';
-                const botStatus = c.isHumanMode ? '<span class="text-red-500 text-xs font-bold">[BOT OFF]</span>' : '';
-                
-                list.innerHTML += `
-                    <div onclick="openChat('${c.phone}')" class="p-3 border-b cursor-pointer ${active}">
-                        <div class="flex justify-between">
-                            <span class="font-bold text-gray-800">${c.phone}</span>
-                            <span class="text-xs text-gray-400">${new Date(c.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                        </div>
-                        <div class="flex justify-between mt-1">
-                            <span class="text-sm text-gray-500 truncate w-40">${c.lastMessage}</span>
-                            ${botStatus}
-                        </div>
-                    </div>
-                `;
+        function init() {
+            const list = document.getElementById('quick-list');
+            QUICK_REPLIES.forEach(q => {
+                list.innerHTML += `<div onclick="selectQuickReply('${encodeURIComponent(q.text)}')" class="p-3 border rounded cursor-pointer hover:bg-green-50 transition">
+                    <div class="font-bold text-gray-700">${q.title}</div>
+                    <div class="text-xs text-gray-500 truncate">${q.text}</div>
+                </div>`;
+            });
+            setInterval(() => { loadContacts(); if(currentPhone) loadMessages(); }, 3000);
+            loadContacts();
+            
+            // Smart scroll detection
+            const chatBox = document.getElementById('chat-history');
+            chatBox.addEventListener('scroll', () => {
+                const isBottom = chatBox.scrollHeight - chatBox.scrollTop <= chatBox.clientHeight + 50;
+                autoScroll = isBottom;
             });
         }
 
+        async function loadContacts() {
+            const res = await fetch('/api/contacts');
+            contactsCache = await res.json();
+            const list = document.getElementById('contacts-list');
+            let html = '';
+
+            contactsCache.forEach(c => {
+                const active = currentPhone === c.phone ? 'active-chat' : 'hover:bg-gray-100';
+                const displayName = c.name || c.phone;
+                const subText = c.name ? `<div class="text-xs text-gray-400">${c.phone}</div>` : '';
+                
+                let tagsHtml = '';
+                if(c.tags) c.tags.forEach(t => {
+                    let color = 'tag-blue';
+                    if(t === 'Urgente') color = 'tag-red';
+                    if(t === 'Cita Confirmada') color = 'tag-green';
+                    tagsHtml += `<span class="badge-tag ${color}">${t}</span>`;
+                });
+                
+                const unreadClass = c.unreadCount > 0 ? 'font-bold' : '';
+                const unreadDot = c.unreadCount > 0 ? '<span class="unread-dot"></span>' : '';
+
+                html += `
+                    <div onclick="openChat('${c.phone}')" class="p-3 border-b cursor-pointer ${active} ${unreadClass}">
+                        <div class="flex justify-between items-center">
+                            <div class="truncate w-40">${displayName}</div>
+                            <span class="text-xs text-gray-400">${new Date(c.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        ${subText}
+                        <div class="flex justify-between mt-1 items-center">
+                            <span class="text-sm text-gray-500 truncate w-40 flex gap-1">${tagsHtml} ${c.lastMessage}</span>
+                            ${unreadDot}
+                        </div>
+                    </div>`;
+            });
+            list.innerHTML = html;
+        }
+
         async function openChat(phone) {
- 
-            document.getElementById('chat-history').innerHTML = '<div class="text-center p-4 text-gray-400">Cargando...</div>';
-            
             currentPhone = phone;
             document.getElementById('empty-state').style.display = 'none';
-            document.getElementById('chat-title').innerText = phone;
+            autoScroll = true; 
             
-            const res = await fetch('/api/contacts');
-            const data = await res.json();
-            const contact = data.find(c => c.phone === phone);
+            const contact = contactsCache.find(c => c.phone === phone);
+            const title = contact && contact.name ? `${contact.name}` : phone;
+            
+            document.getElementById('chat-title').innerText = title;
+            updateHeaderTags(contact ? contact.tags : []);
             updateButton(contact ? contact.isHumanMode : false);
-
+            
             loadMessages();
         }
 
@@ -103,54 +196,122 @@
             const res = await fetch(`/api/chat?phone=${currentPhone}`);
             const msgs = await res.json();
             const box = document.getElementById('chat-history');
-            box.innerHTML = ''; 
+            
+            let html = '';
+            
+            // PINS
+            const pinned = msgs.filter(m => m.isPinned);
+            if(pinned.length > 0) {
+                html += `<div class="bg-yellow-50 p-2 text-xs text-gray-600 mb-2 border-b border-yellow-200"><i class="fas fa-thumbtack mr-1"></i> Mensajes Fijados:</div>`;
+                pinned.forEach(m => html += renderMsg(m, true));
+                html += `<div class="border-b border-gray-300 my-2"></div>`;
+            }
 
-            msgs.forEach(m => {
-                let cls = 'msg-cliente';
-                let label = '';
-                
-                if (m.role === 'admin') { cls = 'msg-admin'; label = '<i class="fas fa-user-tie text-xs mr-1"></i>'; }
-                else if (m.role === 'bot') { cls = 'msg-bot'; label = '<i class="fas fa-robot text-xs mr-1"></i>'; }
+            msgs.forEach(m => html += renderMsg(m));
+            box.innerHTML = html;
 
-                box.innerHTML += `
-                    <div class="p-2 px-3 shadow-sm max-w-[75%] ${cls} flex flex-col">
-                        <div class="text-sm">${m.body}</div>
-                        <div class="text-[10px] text-gray-400 text-right mt-1">
-                            ${label} ${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
-                        </div>
+            if(autoScroll) box.scrollTop = box.scrollHeight;
+        }
+
+        function renderMsg(m, isPinView = false) {
+            let cls = 'msg-cliente';
+            if (m.role === 'admin') cls = 'msg-admin';
+            else if (m.role === 'bot') cls = 'msg-bot';
+
+            const starIcon = m.isStarred ? '<i class="fas fa-star text-yellow-400 ml-1"></i>' : '';
+            const pinClass = m.isPinned ? 'border-l-4 border-yellow-400' : '';
+
+            // Importante: whitespace-pre-wrap para respetar los saltos de línea
+            return `
+                <div class="msg-bubble ${cls} ${pinClass} flex flex-col group">
+                    <div class="text-sm whitespace-pre-wrap">${m.body}</div>
+                    <div class="text-[10px] text-gray-400 text-right mt-1 flex justify-end items-center gap-1">
+                        ${starIcon} ${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
                     </div>
-                `;
+                    ${!isPinView ? `
+                    <div class="msg-actions">
+                        <button onclick="msgAction(${m.timestamp}, 'star', '${m.isStarred ? 'remove' : 'add'})" title="Destacar">⭐</button>
+                        <button onclick="msgAction(${m.timestamp}, 'pin', '${m.isPinned ? 'remove' : 'add'})" title="Fijar">📌</button>
+                    </div>` : ''}
+                </div>`;
+        }
+
+        async function msgAction(timestamp, type, action) {
+            await fetch('/api/message-action', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ phone: currentPhone, timestamp, type, action })
             });
-            box.scrollTop = box.scrollHeight;
+            loadMessages();
         }
 
         async function sendMsg() {
             const input = document.getElementById('msg-input');
             const txt = input.value;
             if(!txt || !currentPhone) return;
-            
             input.value = '';
-
-            document.getElementById('chat-history').innerHTML += `
-                <div class="p-2 px-3 shadow-sm max-w-[75%] msg-admin align-self-end flex flex-col bg-[#d9fdd3] rounded-tl-lg rounded-bl-lg rounded-br-lg ml-auto">
-                    <div class="text-sm">${txt}</div>
-                </div>`;
             
-            await fetch('/api/send', {
-                method: 'POST', 
+            await fetch('/api/send', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, message: txt }) });
+            autoScroll = true;
+            loadMessages();
+        }
+
+        // --- UTILIDADES ---
+        function openQuickReplies() { document.getElementById('modal-quick').classList.remove('hidden'); }
+        function openTagMenu() { if(currentPhone) document.getElementById('modal-tags').classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        
+        function selectQuickReply(text) {
+            const decoded = decodeURIComponent(text);
+            document.getElementById('msg-input').value = decoded;
+            closeModal('modal-quick');
+            document.getElementById('msg-input').focus();
+        }
+
+        async function toggleTag(tag) {
+            const contact = contactsCache.find(c => c.phone === currentPhone);
+            const hasTag = contact && contact.tags && contact.tags.includes(tag);
+            const action = hasTag ? 'remove' : 'add';
+            
+            const res = await fetch('/api/tags', {
+                method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ phone: currentPhone, message: txt })
+                body: JSON.stringify({ phone: currentPhone, tag, action })
             });
-            setTimeout(loadMessages, 500);
+            const data = await res.json();
+            updateHeaderTags(data.tags);
+            loadContacts();
+        }
+
+        function updateHeaderTags(tags) {
+            const div = document.getElementById('header-tags');
+            if(!tags) { div.innerHTML = ''; return; }
+            let html = '';
+            tags.forEach(t => {
+                let color = 'tag-blue';
+                if(t === 'Urgente') color = 'tag-red';
+                if(t === 'Cita Confirmada') color = 'tag-green';
+                html += `<span class="badge-tag ${color}">${t}</span>`;
+            });
+            div.innerHTML = html;
+        }
+
+        function newChat() {
+            const number = prompt("Número (con país, sin +):", "");
+            if (number) openChat(number.replace(/\D/g, ''));
+        }
+        
+        async function editName() {
+            if(!currentPhone) return;
+            const newName = prompt("Nuevo nombre:", "");
+            if(newName) {
+                await fetch('/api/save-name', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, name: newName }) });
+                loadContacts(); openChat(currentPhone);
+            }
         }
 
         async function toggleBot() {
-            const newStatus = !isBotActive; 
-            const res = await fetch('/api/toggle-bot', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ phone: currentPhone, active: newStatus })
-            });
+            const res = await fetch('/api/toggle-bot', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, active: !isBotActive }) });
             const data = await res.json();
             updateButton(data.isHuman);
             loadContacts();
@@ -159,28 +320,28 @@
         function updateButton(isHumanMode) {
             const btn = document.getElementById('btn-toggle');
             btn.style.display = 'block';
-            
             if (isHumanMode) {
                 isBotActive = false;
-                btn.innerText = '🔴 BOT APAGADO (Click para encender)';
-                btn.className = 'px-4 py-2 rounded text-xs font-bold shadow bg-red-100 text-red-600 border border-red-200 hover:bg-red-200';
-                document.getElementById('chat-status').innerText = 'Modo Manual';
+                btn.innerText = '🔴 BOT OFF';
+                btn.className = 'px-3 py-1 rounded text-xs font-bold shadow bg-red-100 text-red-600 border border-red-200';
             } else {
                 isBotActive = true;
-                btn.innerText = '🟢 BOT ENCENDIDO (Click para apagar)';
-                btn.className = 'px-4 py-2 rounded text-xs font-bold shadow bg-green-100 text-green-600 border border-green-200 hover:bg-green-200';
-                document.getElementById('chat-status').innerText = 'Modo Automático';
+                btn.innerText = '🟢 BOT ON';
+                btn.className = 'px-3 py-1 rounded text-xs font-bold shadow bg-green-100 text-green-600 border border-green-200';
             }
         }
 
-        function handleEnter(e) { if(e.key === 'Enter') sendMsg(); }
+        function downloadBackup() { window.location.href = '/api/backup'; }
+        
+        // MANEJO DE ENTER: Si NO presionas Shift, envía.
+        function handleEnter(e) { 
+            if(e.key === 'Enter' && !e.shiftKey) { 
+                e.preventDefault(); // Evita el salto de línea por defecto
+                sendMsg(); 
+            } 
+        }
 
-        setInterval(() => {
-            loadContacts();
-            if(currentPhone) loadMessages();
-        }, 3000);
-
-        loadContacts();
+        init();
     </script>
 </body>
 </html>
