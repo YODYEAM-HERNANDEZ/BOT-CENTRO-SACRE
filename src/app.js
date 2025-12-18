@@ -22,15 +22,20 @@ const registrarMensaje = (telefono, role, body, mediaUrl = null) => {
     const timestamp = Date.now()
     
     let type = 'text';
-    // Lógica inteligente: Si hay URL, es multimedia. Si es texto, se queda como texto.
+    // LÓGICA CORREGIDA PARA ARCHIVOS
     if (mediaUrl) {
-        if (mediaUrl.match(/\.(jpeg|jpg|gif|png)$/i)) type = 'image';
+        // Si hay URL, es multimedia
+        if (mediaUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i)) type = 'image';
         else type = 'file';
     } else if (body && body.includes('_event_')) {
-        // Solo ocultamos el texto si es basura del sistema
-        if(body.includes('image')) type = 'image';
-        else if(body.includes('document')) type = 'file';
-        else type = 'system'; 
+        // Si el body es un evento pero el proveedor no dio URL en el campo estándar,
+        // intentamos ver si el body mismo es la URL (a veces pasa) o marcamos error.
+        if (body.includes('http')) {
+             mediaUrl = body; // A veces el body trae la url
+             type = 'file';
+        } else {
+             type = 'system'; // Ocultar mensaje de sistema si no tiene archivo real
+        }
     }
 
     baseDatosChats[telefono].push({ role, body, timestamp, type, mediaUrl })
@@ -39,7 +44,9 @@ const registrarMensaje = (telefono, role, body, mediaUrl = null) => {
     if (baseDatosChats[telefono].length > 300) baseDatosChats[telefono].shift()
 }
 
-// --- TUS FLUJOS ORIGINALES ---
+// --- TEXTOS EXACTOS DEL DOCUMENTO "NUEVO CENTRO SACRE" ---
+
+// Opción 9: Asesor
 const flowHumano = addKeyword('INTERNAL_HUMAN_MODE')
     .addAction(async (ctx) => console.log(`Usuario ${ctx.from} en modo silencio.`))
     .addAnswer(null, { capture: true }, async (ctx, { gotoFlow, endFlow }) => {
@@ -47,44 +54,193 @@ const flowHumano = addKeyword('INTERNAL_HUMAN_MODE')
         return endFlow()
     })
 
-const flowDespedida = addKeyword('FLUJO_DESPEDIDA').addAnswer('¡Gracias por confiar en Centro Sacre! 🌿💖 Si nos necesitas de nuevo, solo escribe "Hola".')
+const flowAsesor = addKeyword(['asesor', 'humano'])
+    .addAnswer([
+        '¡Por supuesto! 💬 He notificado a un miembro de nuestro equipo para darte atención personalizada.',
+        'En unos momentos alguien se pondrá en contacto contigo. 🤗',
+        '🕓 Nuestro horario de atención es: Lunes a Viernes: 10:00 a.m. – 7:00 p.m. Sábados: 8:00 a.m. – 2:00 p.m.',
+        'IMPORTANTE: Si tu situación es urgente, puedes llamarnos directamente 📞 y con gusto te comunicaremos con una asistente.'
+    ].join('\n'), null, async (ctx, { gotoFlow }) => { 
+        usuariosEnModoHumano.add(ctx.from)
+        return gotoFlow(flowHumano) 
+    })
+
+// Opción 8: Quiénes somos
+const flowNosotros = addKeyword(['quienes', 'somos'])
+    .addAnswer([
+        'Centro Sacre fue fundado el 18 de agosto de 2018 por la fisioterapeuta Nayeli Silva, con la visión de ofrecer una atención auténtica, personalizada e integral 💕',
+        'En una época donde casi no existían clínicas especializadas en suelo pélvico, Nayeli decidió crear un espacio seguro y profesional para acompañar los procesos de rehabilitación 🌿',
+        'Gracias a la confianza de nuestros pacientes, en 2020 se unió Grecia Zapara, fortaleciendo nuestra filosofía y ampliando nuestros servicios 🙌',
+        'Hoy, contamos con dos sucursales y somos un referente en fisioterapia del suelo pélvico y bienestar integral 🌸',
+        'Más que una clínica, somos un espacio que conecta cuerpo, mente y emoción, promoviendo una salud que cuida la vida misma 💗'
+    ].join('\n\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
+
+// Opción 7: Factura
+const flowFactura = addKeyword(['factura'])
+    .addAnswer('Con gusto te ayudamos con tu factura. Solo necesitamos:\n✏️ Nombre completo del paciente', { capture: true }, async (ctx, { state }) => state.update({ nombreFactura: ctx.body }))
+    .addAnswer('📄 Constancia de situación fiscal (actualizada)', { capture: true })
+    .addAnswer([
+        'En cuanto la tengamos, procesaremos tu factura lo antes posible 💫',
+        'Muchas Gracias en unos momentos recibirá su factura.',
+        'Siempre agradeciendo su preferencia.'
+    ].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
+
+// Opción 6: Cancelar
+const flowCancelar = addKeyword(['cancelar', 'baja'])
+    .addAnswer([
+        'Lamentamos que tengas que cancelar 😢 Por favor, comunícate con nosotros por llamada 📞 para hacerlo directamente.',
+        '⚠️ Ten en cuenta que al cancelar tu cita puede interrumpirse la continuidad de tu tratamiento, ya que el tiempo de espera para reagendar es de aproximadamente 2 semanas.',
+        'Gracias por tu comprensión 💗'
+    ].join('\n\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
+
+// Opción 5: Horarios
+const flowHorarios = addKeyword(['horarios'])
+    .addAnswer([
+        '📍 Sucursal Condesa:',
+        '🗓️ Lunes a viernes: 10:00 a.m. – 8:00 p.m.',
+        '🗓️ Sábados: 8:00 a.m. – 2:00 p.m.',
+        '*(Los horarios de las cita y de cada Fisioterapeuta pueden varias)*',
+        '',
+        '📍 Sucursal Santa Fe:',
+        '🗓️ Lunes a viernes: 8:00 a.m. – 4:00 p.m.',
+        '🗓️ Sábados: 8:00 a.m. – 2:00 p.m.',
+        '*(Los horarios de las cita y de cada Fisioterapeuta pueden varias)*'
+    ].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
+
+// Opción 4: Precios
+const flowPrecios = addKeyword(['precios', 'costos'])
+    .addAnswer([
+        '💰 Lista de Precios Actuales:',
+        '🔹 Consulta inicial: $1,350 MXN',
+        '🔹 Sesiones subsecuentes: $1,250 MXN',
+        '(Precios no incluyen IVA)'
+    ].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
+
+// Opción 3: Agendar
+const flowAgendar = addKeyword(['agendar', 'cita'])
+    .addAnswer([
+        'Pasos para agendar tu cita:',
+        '1️⃣ Ingresa al siguiente enlace: https://centrosacre.com/solicitudCitas?cc=yuwE3pdEW3',
+        '2️⃣ Elige la sucursal de tu preferencia 🏠',
+        '3️⃣ Selecciona el tipo de sesión que necesitas 🩼',
+        '4️⃣ Elige a tu fisioterapeuta (si no conoces a ninguna, ¡todo nuestro equipo está preparado para ayudarte! 💪 )',
+        '5️⃣ Escoge día y horas disponibles 🗓️',
+        '6️⃣ Llena los datos del paciente ✍️ y da clic en CONFIRMAR ✅',
+        '7️⃣ ¡Listo! 🎉 Tu cita quedó registrada.',
+        '📩 Te enviaremos un recordatorio un día antes de tu cita.',
+        'IMPORTANTE: Si no recibiste ningún mensaje comunícate directamente por llamada.',
+        '⚠️ Por favor, agenda solo una vez para mantener una atención adecuada a todos los pacientes 💚'
+    ].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
+
+// Opción 2: Sucursales
+const flowSucursales = addKeyword(['sucursales', 'ubicacion'])
+    .addAnswer([
+        'Contamos con 2 sucursales para tu comodidad 💕',
+        '',
+        '📍 Sucursal Condesa',
+        'Baja California 354, Hipódromo Condesa',
+        'Contamos con un lugar de estacionamiento (si está libre, puedes usarlo con gusto).',
+        '👉 https://maps.app.goo.gl/VibfPG6iFyFtMv6D7',
+        '🚗 ¡Conduce con precaución y nos vemos pronto!',
+        '',
+        '📍 Sucursal Santa Fe',
+        'Vasco de Quiroga 4299, Local 203 (arriba del Oxxo en Aserrín)',
+        'Contamos con estacionamiento en la plaza.',
+        '👉 https://waze.com/ul/h9g3qheze0',
+        '🚗 ¡Maneja con cuidado y nos vemos pronto!'
+    ].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
+
+// Opción 1: Servicios
+const flowServicios = addKeyword(['servicios', 'tratamientos'])
+    .addAnswer([
+        '¡Claro! 🌸 En Centro Sacre contamos con atención especializada en:',
+        '🫶 Fisioterapia',
+        '👐 Osteopatía',
+        '🚶🏻‍♀️ Reeducación postural global',
+        '🩷 Rehabilitación de Suelo Pélvico',
+        '👶 Osteopatía Pediátrica',
+        '🤰 Preparación para el parto',
+        '🤱 Rehabilitación Post embarazo',
+        '🌿 Mastitis',
+        '🚑 Rehabilitación oncológica',
+        '🦵 Drenaje linfático',
+        '🙋🏻‍♂️ Rehabilitación suelo pélvico masculino',
+        '',
+        'Si necesitas información sobre otro servicio cuéntanos sobre cual estas interesado y te proporcionaremos información o te recomendamos llamarnos 📞 para darte atención más personalizada 💬✨'
+    ].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
+
+// Menú Principal
+const flowMenu = addKeyword(['Menu', 'menu', 'menú'])
+    .addAnswer([
+        'Por favor, elige la opción que deseas para poder apoyarte:',
+        '1️⃣ Saber más sobre nuestros servicios',
+        '2️⃣ Sucursales',
+        '3️⃣ Agendar una cita 📅',
+        '4️⃣ Conocer precios 💰',
+        '5️⃣ Horarios de sucursales 🕒',
+        '6️⃣ Cancelar cita ❌',
+        '7️⃣ Solicitar factura 🧾',
+        '8️⃣ ¿Quiénes somos? 💫',
+        '9️⃣ Hablar con un asesor 👩‍💻'
+    ].join('\n'), { capture: true }, async (ctx, { gotoFlow, fallBack }) => {
+        const op = ctx.body.trim();
+        if(['1', 'servicio', 'servicios'].some(x => op.includes(x))) return gotoFlow(flowServicios);
+        if(['2', 'sucursales', 'ubicacion'].some(x => op.includes(x))) return gotoFlow(flowSucursales);
+        if(['3', 'agendar', 'cita'].some(x => op.includes(x))) return gotoFlow(flowAgendar);
+        if(['4', 'precios', 'costos'].some(x => op.includes(x))) return gotoFlow(flowPrecios);
+        if(['5', 'horarios'].some(x => op.includes(x))) return gotoFlow(flowHorarios);
+        if(['6', 'cancelar', 'baja'].some(x => op.includes(x))) return gotoFlow(flowCancelar);
+        if(['7', 'factura'].some(x => op.includes(x))) return gotoFlow(flowFactura);
+        if(['8', 'quienes', 'somos'].some(x => op.includes(x))) return gotoFlow(flowNosotros);
+        if(['9', 'asesor', 'humano'].some(x => op.includes(x))) return gotoFlow(flowAsesor);
+        return fallBack('⚠️ Opción no válida. Por favor escribe solo el número (ej: 1).');
+    })
+
+// Flujo Formulario Primera Vez
+const flowFormulario = addKeyword(['formulario_registro'])
+    .addAnswer([
+        'Nos hace muy felices que hayas elegido a Centro Sacre para tu rehabilitación 💃',
+        'Para asegurarnos de preparar todo para tu visita ¿podrías compartirnos algunos datos?',
+        '🔹 Nombre completo:',
+        '🔹 Número de teléfono:',
+        '🔹 Correo electrónico:',
+        '🔹 Motivo de consulta:',
+        '🔹 Doctor@ que canaliza:',
+        '🔹 Fecha de nacimiento:',
+        '(Envía todo en un solo mensaje por favor)'
+    ].join('\n'), { capture: true }, async (ctx, { state }) => state.update({ datos: ctx.body }))
+    .addAnswer([
+        'Estamos aquí para hacer este proceso lo más cómodo posible para ti 😀',
+        'Un gusto que formes parte de la familia Centro Sacre ❣️'
+    ].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowMenu))
+
+// Flujo Continuar
 const flowContinuar = addKeyword('FLUJO_CONTINUAR')
-    .addAnswer('¿Deseas realizar otra consulta? 👇', { capture: true, buttons: [{ body: 'Ir al Menú' }, { body: 'Finalizar' }] },
-        async (ctx, { gotoFlow }) => { return ctx.body.includes('Menú') ? gotoFlow(flowMenu) : gotoFlow(flowDespedida) })
+    .addAnswer('¿Deseas realizar alguna otra consulta? 👇', { capture: true, buttons: [{ body: 'Ir al Menú' }, { body: 'Finalizar' }] }, 
+    async (ctx, { gotoFlow }) => {
+        if(ctx.body.includes('Menú')) return gotoFlow(flowMenu);
+        return gotoFlow(flowDespedida);
+    })
 
-const flowAgendar = addKeyword(['agendar', 'cita']).addAnswer(['📅 *Para agendar:*', '1️⃣ Entra aquí: https://centrosacre.com/solicitudCitas?cc=yuwE3pdEW3'].join('\n\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
-const flowPostServicio = addKeyword('INTERNAL_POST_SERVICE').addAnswer('¿Te gustaría agendar tu cita o consultar otro servicio? 👇', { capture: true, buttons: [{ body: 'Agendar Cita' }, { body: 'Ver otro' }, { body: 'Ir al Menú' }] }, async (ctx, { gotoFlow }) => { if (ctx.body.includes('Agendar')) return gotoFlow(flowAgendar); if (ctx.body.includes('otro')) return gotoFlow(flowServicios); if (ctx.body.includes('Menú')) return gotoFlow(flowMenu); return gotoFlow(flowDespedida) })
-const flowDescripcionServicios = addKeyword('INTERNAL_DESC_SERVICIOS').addAnswer('Escribe el número del servicio 👇', { capture: true }, async (ctx, { flowDynamic, gotoFlow, fallBack }) => { const op = ctx.body.trim(); const d = { '1': '🫶 *Fisioterapia*', '2': '👐 *Osteopatía*', '3': '🚶🏻‍♀️ *RPG*', '4': '🩷 *Suelo Pélvico*', '5': '👶 *Osteopatía Pediátrica*', '6': '🤰 *Parto*', '7': '🤱 *Post embarazo*', '8': '🌿 *Lactancia*', '9': '🚑 *Oncológica*', '10': '🦵 *Drenaje*', '11': '🙋🏻‍♂️ *Suelo Pélvico Masc*' }; if(d[op]) { await flowDynamic(d[op]); return gotoFlow(flowPostServicio); } return fallBack('⚠️ Opción no válida.'); })
-const flowServicios = addKeyword(['servicios', 'tratamientos']).addAnswer(['🌸 *Servicios:*', '1️⃣ Fisioterapia', '2️⃣ Osteopatía', '3️⃣ RPG', '4️⃣ Suelo Pélvico', '5️⃣ Osteopatía Pediátrica', '6️⃣ Prep. Parto', '7️⃣ Post embarazo', '8️⃣ Mastitis', '9️⃣ Oncológica', '1️⃣0️⃣ Drenaje', '1️⃣1️⃣ Suelo Pélvico Masc'].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowDescripcionServicios))
-const flowSucursales = addKeyword(['sucursales', 'ubicacion']).addAnswer('📍 ¿Qué sede buscas?', { capture: true, buttons: [{ body: 'Condesa' }, { body: 'Santa Fe' }] }, async (ctx, { flowDynamic, gotoFlow, fallBack }) => { if (ctx.body.toLowerCase().includes('condesa')) { await flowDynamic('📍 Condesa: Baja California 354'); return gotoFlow(flowContinuar) } if (ctx.body.toLowerCase().includes('santa')) { await flowDynamic('📍 Santa Fe: Vasco de Quiroga 4299'); return gotoFlow(flowContinuar) } return fallBack('Selecciona un botón.') })
-const flowHorarios = addKeyword(['horarios']).addAnswer('🕒 Sede:', { capture: true, buttons: [{ body: 'Condesa' }, { body: 'Santa Fe' }] }, async (ctx, { flowDynamic, gotoFlow }) => { if (ctx.body.toLowerCase().includes('condesa')) await flowDynamic('L-V 10am-8pm'); else await flowDynamic('L-V 8am-4pm'); return gotoFlow(flowContinuar) })
-const flowPrecios = addKeyword(['precios', 'costos']).addAnswer(['💰 *Precios:*', 'Consulta inicial: $1,350', 'Subsecuentes: $1,250'].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
-const flowFactura = addKeyword(['factura']).addAnswer('✏️ Nombre completo:', { capture: true }, async (ctx, { state }) => state.update({ nombre: ctx.body })).addAnswer('📄 Constancia Fiscal:', { capture: true }).addAnswer('✅ Recibido.', null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
-const flowCancelar = addKeyword(['cancelar', 'baja']).addAnswer('📅 Indícanos fecha/hora para cancelar o usa el link: https://centrosacre.com/solicitudCitas?cc=yuwE3pdEW3', null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
-const flowTarde = addKeyword(['tarde', 'retraso']).addAnswer('🕒 Notificado. El tiempo de sesión se reducirá.', null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
-const flowNosotros = addKeyword(['quienes', 'somos']).addAnswer('Somos un referente en bienestar integral. 🌿', null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
-const flowAsesor = addKeyword(['asesor', 'humano']).addAnswer('He notificado a nuestro equipo. 💬', null, async (ctx, { gotoFlow }) => { usuariosEnModoHumano.add(ctx.from); return gotoFlow(flowHumano) })
-
-const flowMenu = addKeyword(['Menu', 'menu', 'menú']).addAnswer(['🙌 *Menú Principal*', '1️⃣ Servicios', '2️⃣ Sucursales', '3️⃣ Agendar', '4️⃣ Precios', '5️⃣ Horarios', '6️⃣ Cancelar', '7️⃣ Factura', '8️⃣ ¿Quiénes somos?', '9️⃣ Asesor', '1️⃣0️⃣ Tarde'].join('\n'), { capture: true }, async (ctx, { gotoFlow, fallBack }) => {
-    let op = ctx.body.trim();
-    if (op.includes('1') || op.includes('servicio')) return gotoFlow(flowServicios);
-    if (op.includes('2') || op.includes('sucursal')) return gotoFlow(flowSucursales);
-    if (op.includes('3') || op.includes('agendar')) return gotoFlow(flowAgendar);
-    if (op.includes('4')) return gotoFlow(flowPrecios);
-    if (op.includes('5')) return gotoFlow(flowHorarios);
-    if (op.includes('6')) return gotoFlow(flowCancelar);
-    if (op.includes('7')) return gotoFlow(flowFactura);
-    if (op.includes('8')) return gotoFlow(flowNosotros);
-    if (op.includes('9') || op.includes('asesor')) return gotoFlow(flowAsesor);
-    if (op.includes('10')) return gotoFlow(flowTarde);
-    return fallBack('Opción no válida.');
-})
-const flowFormulario = addKeyword(['formulario_registro']).addAnswer('🔹 Datos (Nombre, Tel, Correo):', { capture: true }, async (ctx, { state }) => state.update({ datos: ctx.body })).addAnswer('✅ Listo.', null, async (_, { gotoFlow }) => gotoFlow(flowMenu))
-const flowPrincipal = addKeyword(EVENTS.WELCOME).addAction(async (ctx, { gotoFlow }) => { if (usuariosEnModoHumano.has(ctx.from)) return gotoFlow(flowHumano) }).addAnswer('¡Hola! 😊 Bienvenido a *Centro Sacre*. ¿Primera vez?', { capture: true, buttons: [{ body: 'Si' }, { body: 'No' }] }, async (ctx, { gotoFlow }) => { if (ctx.body.toLowerCase() === 'si') return gotoFlow(flowFormulario); return gotoFlow(flowMenu) })
+// Bienvenida
+const flowPrincipal = addKeyword(EVENTS.WELCOME)
+    .addAction(async (ctx, { gotoFlow }) => { if (usuariosEnModoHumano.has(ctx.from)) return gotoFlow(flowHumano) })
+    .addAnswer([
+        '¡Hola! 😊 Te damos la bienvenida a Centro Sacre 🩷 .',
+        'Soy tu asistente virtual y estoy aquí para ayudarte a encontrar la información que necesitas de forma rápida y sencilla.',
+        'Indícanos si eres paciente de primera vez:'
+    ].join('\n'), { capture: true, buttons: [{ body: 'Si' }, { body: 'No' }] }, async (ctx, { gotoFlow }) => {
+        if(ctx.body.toLowerCase() === 'si') return gotoFlow(flowFormulario);
+        return gotoFlow(flowMenu);
+    })
 
 const main = async () => {
     const adapterDB = new MemoryDB()
-    const adapterFlow = createFlow([flowPrincipal, flowFormulario, flowMenu, flowServicios, flowDescripcionServicios, flowPostServicio, flowSucursales, flowAgendar, flowPrecios, flowHorarios, flowCancelar, flowTarde, flowFactura, flowNosotros, flowAsesor, flowContinuar, flowDespedida, flowHumano])
+    const adapterFlow = createFlow([
+        flowPrincipal, flowFormulario, flowMenu, flowServicios, flowSucursales, 
+        flowAgendar, flowPrecios, flowHorarios, flowCancelar, flowFactura, 
+        flowNosotros, flowAsesor, flowContinuar, flowDespedida, flowHumano 
+    ])
     
     const adapterProvider = createProvider(MetaProvider, {
         jwtToken: process.env.JWT_TOKEN,
@@ -110,7 +266,7 @@ const main = async () => {
             return {
                 phone: telefono,
                 name: nombresGuardados[telefono] || '',
-                // Mostrar si es foto o archivo en la vista de lista
+                // Mostrar vista previa si es archivo
                 lastMessage: ultimo ? (ultimo.type === 'image' ? '📷 Foto' : (ultimo.type === 'file' ? '📂 Archivo' : ultimo.body)) : '',
                 timestamp: ultimo ? ultimo.timestamp : 0,
                 isHumanMode: usuariosEnModoHumano.has(telefono),
@@ -209,9 +365,14 @@ const main = async () => {
         catch (e) { res.end('Error: Falta public/index.html'); }
     })
 
+    // --- CORRECCIÓN CRÍTICA DE ARCHIVOS: CAPTURA REAL DE URL ---
     provider.on('message', (payload) => {
-        // Detectar URL de archivo
-        let mediaUrl = payload.url || payload?.message?.imageMessage?.url || payload?.message?.documentMessage?.url || null;
+        let mediaUrl = null;
+        // Intenta obtener la URL desde distintas propiedades posibles del proveedor
+        if (payload.url) mediaUrl = payload.url; 
+        else if (payload?.message?.imageMessage?.url) mediaUrl = payload.message.imageMessage.url;
+        else if (payload?.message?.documentMessage?.url) mediaUrl = payload.message.documentMessage.url;
+        // En algunas versiones, 'file' trae la URL
         if (!mediaUrl && payload.file) mediaUrl = payload.file;
 
         registrarMensaje(payload.from, 'cliente', payload.body, mediaUrl)

@@ -15,14 +15,15 @@
         .msg-bot { background-color: #f0f2f5; align-self: flex-end; font-size: 0.9em; font-style: italic; border: 1px dashed #ccc; width: fit-content; }
         .active-chat { background-color: #e9edef; border-left: 4px solid #008069; }
         
-        /* Estilos recuperados para etiquetas y archivos */
         .msg-actions { display: none; position: absolute; top: 0; right: 0; padding: 4px; background: rgba(255,255,255,0.9); border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); z-index: 10; }
         .msg-bubble:hover .msg-actions { display: flex; gap: 5px; }
         .msg-img { max-width: 250px; border-radius: 8px; cursor: pointer; margin-bottom: 5px; }
+        
         .badge-tag { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-right: 2px; text-transform: uppercase; }
         .tag-blue { background-color: #cce5ff; color: #004085; }
         .tag-red { background-color: #f8d7da; color: #721c24; }
         .tag-green { background-color: #d4edda; color: #155724; }
+        .tag-purple { background-color: #e9d5ff; color: #581c87; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden">
@@ -78,8 +79,9 @@
         <div class="bg-white rounded p-6 w-80">
             <h2 class="font-bold mb-4">🏷️ Etiquetas</h2>
             <div class="space-y-2">
+                <button onclick="toggleTag('Solicita Factura')" class="w-full text-left p-2 border rounded hover:bg-blue-50 text-blue-700">🟦 Solicita Factura</button>
+                <button onclick="toggleTag('Solicita Recibo')" class="w-full text-left p-2 border rounded hover:bg-purple-50 text-purple-700">🟪 Solicita Recibo</button>
                 <button onclick="toggleTag('Urgente')" class="w-full text-left p-2 border rounded hover:bg-red-50 text-red-700">🟥 Urgente</button>
-                <button onclick="toggleTag('Factura Pendiente')" class="w-full text-left p-2 border rounded hover:bg-blue-50 text-blue-700">🟦 Factura Pendiente</button>
                 <button onclick="toggleTag('Cita Confirmada')" class="w-full text-left p-2 border rounded hover:bg-green-50 text-green-700">🟩 Cita Confirmada</button>
             </div>
             <button onclick="document.getElementById('modal-tags').classList.add('hidden')" class="mt-4 w-full bg-gray-200 p-2 rounded">Cerrar</button>
@@ -88,9 +90,18 @@
 
     <script>
         const QUICK_REPLIES = [
-            { title: "1. Condesa (7:00am)", text: `Hola 👋\nMe comunico para confirmar su cita de mañana en Condesa a las 07:00am con la fisioterapeuta Andrea Quintero ☀️\n\nDatos importantes:\n💫 Llegar 15 min antes.\n💫 Dirección: Baja California 354.\n💫 Ubicación: https://maps.app.goo.gl/VibfPG6iFyFtMv6D7\n\n💫Manejamos\n💫\n\nGracias por confiar en Centro Sacre 🫶` },
-            { title: "2. Santa Fe (9:00am)", text: `Hola 👋\nConfirmamos cita mañana en Santa Fe a las 9:00am con Grecia Zapata☀️\n\nDatos:\n💫 Llegar 15 min antes.\n💫 Dirección: Vasco de Quiroga 4299, Local 203.\n💫 Waze: https://waze.com/ul/h9g3qheze0\n\nGracias por confiar en Centro Sacre 🫶` },
-            { title: "3. Ubicación Santa Fe", text: `Dirección Santa Fe ✌️\n💫 Vasco de Quiroga 4299, Local 203.\n💫 Waze: https://waze.com/ul/h9g3qheze0\n\n¡Conduce con precaución! 😃` }
+            { 
+                title: "1. Condesa (7:00am Andrea)", 
+                text: `Hola 👋\nMe comunico para confirmar su cita de mañana en Condesa a las 07:00am con la fisioterapeuta Andrea Quintero ☀️\n\nAquí algunos datos a tener en cuenta para tu consulta de primera vez 🪄\n\n💫Te pedimos llegar 15 min antes de tu consulta para firma de consentimiento informado 😊\n\n💫Te compartimos nuestra dirección en condesa ✌️\n💫 Baja California 354 hipódromo condesa\n💫 Contamos con un lugar de estacionamiento si está libre puedes utilizarlo con mucho gusto 🚗\n\n💫 Aquí el link con nuestra dirección 👇\n🔝 https://maps.app.goo.gl/VibfPG6iFyFtMv6D7\n\n💫Manejamos una penalización si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda que tiene la fisioterapeuta.\n\n💫 Ven con ropa cómoda o puedes traer ropa de deporte en una maletita 😉\n\nGracias por confiar en Centro Sacre 🫶` 
+            },
+            { 
+                title: "2. Santa Fe (9:00am Grecia)", 
+                text: `Hola 👋\nMe comunico para confirmar su cita del día mañana en Santa Fe a las 9:00am con la fisioterapeuta Grecia Zapata☀️\n\nAquí algunos datos a tener en cuenta para tu consulta de primera vez 🪄\n\n💫Te pedimos llegar 15 min antes de tu consulta para firma de consentimiento informado 😊\n\n💫Aquí nuestra dirección en Santa Fe ✌️\n💫 Vasco de Quiroga 4299, Ciudad de México, Distrito Federal 05370 local 203 arriba del Oxxo en aserrin\n💫 Contamos con estacionamiento en la plaza 🚗\n\n💫 Aquí el link con nuestra dirección 👇\n🔝 Usa Waze para conducir a Centro sacre Mx - Centro Infinito , Vasco de Quiroga, 4299, Ciudad de México:\nhttps://waze.com/ul/h9g3qheze0\n\n💫Manejamos una penalización si las cancelaciones no se realizan con 24 de antelación 🙏.\n\nGracias por confiar en Centro Sacre 🫶`
+            },
+            { 
+                title: "3. Ubicación Santa Fe", 
+                text: `Te compartimos nuestra dirección en Santa Fe ✌️\n\n💫 Vasco de Quiroga 4299, Ciudad de México, Distrito Federal 05370 local 203 arriba del Oxxo en aserrin\n💫 Contamos estacionamiento en la plaza 🚗\n\n💫 Aquí el link con nuestra dirección 👇\n🔝 Usa Waze para conducir a Centro sacre Mx - Centro Infinito , Vasco de Quiroga, 4299, Ciudad de México:\nhttps://waze.com/ul/h9g3qheze0\n\n💫 Conduce con precaución! y nos vemos pronto 😃`
+            }
         ];
 
         let currentPhone = null;
@@ -120,7 +131,14 @@
                 const list = document.getElementById('contacts-list');
                 
                 list.innerHTML = contacts.map(c => {
-                    let tagsHtml = c.tags.map(t => `<span class="badge-tag ${t==='Urgente'?'tag-red':'tag-blue'}">${t}</span>`).join('');
+                    let tagsHtml = c.tags.map(t => {
+                        let color = 'tag-blue';
+                        if(t==='Urgente') color = 'tag-red';
+                        if(t==='Solicita Recibo') color = 'tag-purple';
+                        if(t==='Cita Confirmada') color = 'tag-green';
+                        return `<span class="badge-tag ${color}">${t}</span>`;
+                    }).join('');
+                    
                     return `
                     <div onclick="openChat('${c.phone}')" class="p-3 border-b cursor-pointer ${currentPhone === c.phone ? 'active-chat' : ''}">
                         <div class="font-bold flex items-center gap-1">
@@ -136,7 +154,6 @@
         async function openChat(phone) {
             currentPhone = phone;
             document.getElementById('empty-state').style.display = 'none';
-            // Botón de Llamada agregado
             const phoneLink = `<a href="tel:+${phone}" title="Llamar" class="ml-2 text-green-600 hover:text-green-800 text-lg"><i class="fas fa-phone-alt"></i></a>`;
             document.getElementById('chat-title').innerHTML = phone + phoneLink;
             await loadMessages();
@@ -155,17 +172,31 @@
             const me = contacts.find(c => c.phone === currentPhone);
             const headerTags = document.getElementById('header-tags');
             if(me && me.tags) {
-                headerTags.innerHTML = me.tags.map(t => `<span class="badge-tag ${t==='Urgente'?'tag-red':'tag-blue'}">${t}</span>`).join('');
+                headerTags.innerHTML = me.tags.map(t => {
+                     let color = 'tag-blue';
+                     if(t==='Urgente') color = 'tag-red';
+                     if(t==='Solicita Recibo') color = 'tag-purple';
+                     if(t==='Cita Confirmada') color = 'tag-green';
+                     return `<span class="badge-tag ${color}">${t}</span>`;
+                }).join('');
             }
 
             const box = document.getElementById('chat-history');
             box.innerHTML = msgs.map(m => {
                 const cls = m.role === 'admin' ? 'msg-admin' : (m.role === 'bot' ? 'msg-bot' : 'msg-cliente');
                 
-                // --- AQUÍ ESTÁ EL ARREGLO VISUAL ---
+                // --- VISUALIZACIÓN DE ARCHIVOS ---
                 let content = `<div class="whitespace-pre-wrap text-sm">${m.body}</div>`;
-                if(m.type === 'image') content = `<img src="${m.mediaUrl}" class="msg-img" onclick="window.open('${m.mediaUrl}')"><div class="text-xs">${m.body||''}</div>`;
-                if(m.type === 'file') content = `<div class="bg-gray-100 p-2 rounded flex items-center gap-2 cursor-pointer" onclick="window.open('${m.mediaUrl}')"><i class="fas fa-file-pdf text-red-500 text-xl"></i> <span class="text-blue-600 underline text-sm">Ver Archivo</span></div>`;
+                
+                if(m.type === 'image') {
+                    const src = m.mediaUrl || 'https://via.placeholder.com/150?text=Foto';
+                    content = `<img src="${src}" class="msg-img" onclick="window.open('${src}')"><div class="text-xs">${m.body.replace(/_event_.*/, '')}</div>`;
+                }
+                if(m.type === 'file') {
+                    const src = m.mediaUrl || '#';
+                    content = `<div class="bg-gray-100 p-2 rounded flex items-center gap-2 cursor-pointer" onclick="window.open('${src}')"><i class="fas fa-file-pdf text-red-500 text-xl"></i> <span class="text-blue-600 underline text-sm">Ver Archivo</span></div>`;
+                }
+                if(m.type === 'system') return ''; 
                 
                 const starIcon = m.isStarred ? '<i class="fas fa-star text-yellow-500 text-xs"></i>' : '';
                 const pinClass = m.isPinned ? 'border-l-4 border-yellow-400' : '';
