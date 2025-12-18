@@ -2,6 +2,20 @@ import 'dotenv/config'
 import { createBot, createProvider, createFlow, addKeyword, EVENTS } from '@builderbot/bot'
 import { MetaProvider } from '@builderbot/provider-meta'
 import { MemoryDB } from '@builderbot/bot'
+// --- NUEVOS IMPORTS PARA EL PANEL ADMIN ---
+import { join } from 'path'
+import { readFileSync } from 'fs'
+
+/**
+ * MEMORIA SIMPLE PARA EL HISTORIAL DEL CHAT (PANEL ADMIN)
+ * Guarda los últimos 50 mensajes para mostrarlos en tu web.
+ */
+const historialMensajes = []
+
+const guardarMensaje = (from, body, number) => {
+    historialMensajes.push({ from, body, number, timestamp: Date.now() })
+    if (historialMensajes.length > 50) historialMensajes.shift() 
+}
 
 /**
  * BLOQUE 0: FLUJOS DE NAVEGACIÓN Y CIERRE
@@ -42,12 +56,9 @@ const flowPostServicio = addKeyword('INTERNAL_POST_SERVICE')
             ]
         },
         async (ctx, { gotoFlow }) => {
-            // Lógica para el nuevo botón
             if (ctx.body.includes('Agendar')) {
                 return gotoFlow(flowAgendar) 
             }
-            
-            // Lógica existente
             if (ctx.body.includes('otro')) {
                 return gotoFlow(flowServicios) 
             }
@@ -65,19 +76,18 @@ const flowDescripcionServicios = addKeyword('INTERNAL_DESC_SERVICIOS')
         async (ctx, { flowDynamic, gotoFlow, fallBack }) => {
             const opcion = ctx.body;
 
-            // BASE DE DATOS DE DESCRIPCIONES (Limpia)
             const descripciones = {
                 '1': '🫶 *Fisioterapia:*\nTratamiento para aliviar dolor, recuperar movilidad y mejorar la función corporal.',
-                '2': '👐 *Osteopatía:*\nEs un tratamiento donde evaluamos y tratamos a través de un abordaje integral observando el origen de la disfunción la cual se aborda a través de técnicas manuales a los tejidos y estructuras del cuerpo observándose como una unidad completa en donde si un sistema está en desequilibrio automáticamente altera la función del cuerpo en general.',
-                '3': '🚶🏻‍♀️ *Reeducación Postural Global (RPG):*\nEs un método fisioterapéutico para tratar las diferentes patologías del sistema muscular y óseo, especialmente aquellas que tienen relación con la postura. Consiste en realizar posturas activas, poniendo atención en la respiración y trabajando distintas regiones y sistemas de coordinación muscular.',
+                '2': '👐 *Osteopatía:*\nEs un tratamiento donde evaluamos y tratamos a través de un abordaje integral observando el origen de la disfunción.',
+                '3': '🚶🏻‍♀️ *Reeducación Postural Global (RPG):*\nEs un método fisioterapéutico para tratar las diferentes patologías del sistema muscular y óseo.',
                 '4': '🩷 *Rehabilitación de Suelo Pélvico:*\nEs un tratamiento en el que se brinda atención especializada y personalizada para disfunciones relacionadas a esta zona.',
-                '5': '👶 *Osteopatía Pediátrica:*\nEs un tratamiento no invasivo que ayuda a eliminar tensiones en el recién nacido posiblemente generadas por posiciones uterinas, cesáreas o expulsivos instrumentados o prolongados, son técnicas no invasivas ni dolorosas.',
-                '6': '🤰 *Preparación para el parto:*\nEs un tratamiento enfocado en mejorar la movilidad técnica, disminuir molestias y facilitar un mejor parto en el cual es ideal iniciar después de tu semana 18.',
-                '7': '🤱 *Rehabilitación Post embarazo:*\nEs un tratamiento enfocado en recuperación física tras el embarazo y el parto, reeducamos la musculatura abdominal y pélvica, liberamos cicatrices si es el caso, trabajamos postura y respiración, te ayudamos a la actividad diaria y te ayudamos a sentirte fuerte, estable y en equilibrio en tu día a día.',
-                '8': '🌿 *Mastitis y Lactancia:*\nDurante el post parto una de las complicaciones que pueden tener es inflamación o conductos mamarios tapados, ocasionando dolor, inflamación, temperatura, las técnicas y equipo que utilizamos no se interponen con la lactancia por lo que te ayudamos a sumar en tu maternidad.',
-                '9': '🚑 *Rehabilitación oncológica:*\nDirigido a pacientes que hayan tenido algún tema oncológico para mejorar arcos de movilidad, fuerza aliviar. Se ofrece calidad de vida y enfocado, sobre todo en pacientes con temas glandulares que hayan desencadenado linfedema, y se encuentren en etapa preventiva en tratamiento o paliativo.',
-                '10': '🦵 *Drenaje linfático:*\nTratamiento enfocado a pacientes que requieran disminución del edema, ya sea por 1 tema oncológico, linfedema primario, Lipedema, pacientes embarazadas, de posparto.',
-                '11': '🙋🏻‍♂️ *Rehabilitación suelo pélvico masculino:*\nEs un tratamiento dirigido a hombres que presentan disfunciones pélvicas como incontinencia, dolor pélvico, dificultades urinarias o cambios después de cirugía de próstata, te ayudamos a recuperar fuerza, control y continuidad con tu día a día.'
+                '5': '👶 *Osteopatía Pediátrica:*\nEs un tratamiento no invasivo que ayuda a eliminar tensiones en el recién nacido.',
+                '6': '🤰 *Preparación para el parto:*\nEs un tratamiento enfocado en mejorar la movilidad técnica, disminuir molestias y facilitar un mejor parto.',
+                '7': '🤱 *Rehabilitación Post embarazo:*\nEs un tratamiento enfocado en recuperación física tras el embarazo y el parto.',
+                '8': '🌿 *Mastitis y Lactancia:*\nTratamiento para inflamación o conductos mamarios tapados.',
+                '9': '🚑 *Rehabilitación oncológica:*\nDirigido a pacientes que hayan tenido algún tema oncológico para mejorar calidad de vida.',
+                '10': '🦵 *Drenaje linfático:*\nTratamiento enfocado a pacientes que requieran disminución del edema.',
+                '11': '🙋🏻‍♂️ *Rehabilitación suelo pélvico masculino:*\nTratamiento dirigido a hombres que presentan disfunciones pélvicas.'
             };
 
             const info = descripciones[opcion];
@@ -128,7 +138,10 @@ const flowAsesor = addKeyword(['asesor', 'humano'])
             '📞 Si es urgente, llámanos directamente para comunicarte con una asistente.'
         ].join('\n'),
         null,
-        async (_, { gotoFlow }) => { return gotoFlow(flowContinuar) }
+        async (ctx, { provider, gotoFlow }) => { 
+             // Opcional: Aquí podrías mandar una alerta extra a tu celular si quisieras
+             return gotoFlow(flowContinuar) 
+        }
     )
 
 const flowNosotros = addKeyword(['quienes', 'somos', 'mision'])
@@ -180,7 +193,6 @@ const flowCancelar = addKeyword(['cancelar', 'baja'])
         async (_, { gotoFlow }) => { return gotoFlow(flowContinuar) }
     )
 
-// --- NUEVO FLUJO AGREGADO: LLEGADA TARDE ---
 const flowTarde = addKeyword(['tarde', 'retraso', 'llegar'])
     .addAnswer(
         [
@@ -196,7 +208,6 @@ const flowTarde = addKeyword(['tarde', 'retraso', 'llegar'])
         null,
         async (_, { gotoFlow }) => { return gotoFlow(flowContinuar) }
     )
-// -------------------------------------------
 
 const flowHorarios = addKeyword(['horarios', 'horario', 'abierto'])
     .addAnswer(
@@ -340,7 +351,6 @@ const flowSucursalesNavegacion = addKeyword('INTERNAL_SUCURSALES_NAV')
         }
     )
 
-// --- MENÚ ACTUALIZADO CON OPCIÓN 10 ---
 const flowMenu = addKeyword(['Menu', 'menu', 'menú'])
     .addAnswer(
         [
@@ -356,7 +366,7 @@ const flowMenu = addKeyword(['Menu', 'menu', 'menú'])
             '7️⃣ Facturación 🧾',
             '8️⃣ ¿Quiénes somos? ✨',
             '9️⃣ Hablar con asesor 👩‍💻',
-            '1️⃣0️⃣ Vas tarde a tu cita 🏃', // <--- Opción Agregada
+            '1️⃣0️⃣ Vas tarde a tu cita 🏃',
             '',
             '*(Escribe el número de la opción)*'
         ].join('\n'),
@@ -372,8 +382,6 @@ const flowMenu = addKeyword(['Menu', 'menu', 'menú'])
             if (['7', 'siete'].includes(opcion)) return gotoFlow(flowFactura);
             if (['8', 'ocho'].includes(opcion)) return gotoFlow(flowNosotros);
             if (['9', 'nueve'].includes(opcion)) return gotoFlow(flowAsesor);
-            
-            // <--- Lógica Agregada
             if (['10', 'diez', 'tarde'].includes(opcion)) return gotoFlow(flowTarde);
             
             return fallBack('⚠️ Opción no válida. Escribe solo el número (ej: 1).');
@@ -440,7 +448,6 @@ const flowPrincipal = addKeyword(EVENTS.WELCOME)
 const main = async () => {
     const adapterDB = new MemoryDB()
     
-    // --- SE AGREGÓ flowTarde A LA LISTA ---
     const adapterFlow = createFlow([
         flowPrincipal,
         flowFormulario,
@@ -455,7 +462,7 @@ const main = async () => {
         flowHorarios,
         flowHorariosNavegacion,
         flowCancelar,
-        flowTarde, // <--- Aquí
+        flowTarde,
         flowFactura,
         flowNosotros,
         flowAsesor,
@@ -464,10 +471,10 @@ const main = async () => {
     ])
 
     const adapterProvider = createProvider(MetaProvider, {
-    jwtToken: process.env.JWT_TOKEN,
-    numberId: process.env.NUMBER_ID,
-    verifyToken: process.env.VERIFY_TOKEN,
-    version: 'v20.0'
+        jwtToken: process.env.JWT_TOKEN,
+        numberId: process.env.NUMBER_ID,
+        verifyToken: process.env.VERIFY_TOKEN,
+        version: 'v20.0'
     })
   
     const { httpServer, provider } = await createBot({
@@ -476,11 +483,51 @@ const main = async () => {
         database: adapterDB,
     })
 
-    provider.on('message', ({ body, from, name }) => {
-        console.log(`\n🟢 MENSAJE DE: ${name} (+${from})`)
-        console.log(`💬 DICE: ${body}`)
-        console.log('-----------------------------------')
+    // ==========================================================
+    // INICIO DEL CEREBRO DEL PANEL DE ADMINISTRADOR (NUEVO)
+    // ==========================================================
+
+    // 1. API para que la página HTML vea el historial
+    adapterProvider.server.get('/admin/history', (req, res) => {
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify(historialMensajes))
     })
+
+    // 2. API para que tú envíes mensajes desde el panel
+    adapterProvider.server.post('/admin/send', async (req, res) => {
+        const body = req.body || {}
+        const { phone, message } = body
+        
+        if (phone && message) {
+            await adapterProvider.sendText(phone, message)
+            guardarMensaje('bot', message, phone) // Guardar también lo que respondes
+            res.end('Enviado')
+        } else {
+            res.end('Error: Faltan datos')
+        }
+    })
+
+    // 3. Ruta para mostrar tu archivo HTML
+    adapterProvider.server.get('/panel', (req, res) => {
+        try {
+            const pathHtml = join(process.cwd(), 'public', 'index.html')
+            const html = readFileSync(pathHtml, 'utf8')
+            res.end(html)
+        } catch (e) {
+            res.end('Error: No has creado el archivo public/index.html')
+        }
+    })
+
+    // 4. Escuchar y guardar todo lo que llega para que lo veas en el panel
+    provider.on('message', (payload) => {
+        guardarMensaje('cliente', payload.body, payload.from)
+        console.log(`\n🟢 MENSAJE DE: ${payload.name} (+${payload.from})`)
+        console.log(`💬 DICE: ${payload.body}`)
+    })
+
+    // ==========================================================
+    // FIN DEL CEREBRO DEL PANEL
+    // ==========================================================
 
     const PORT = process.env.PORT || 3008
     httpServer(PORT)

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sacre Chat Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #e5ddd5; }
+        .chat-bg { background-color: #efeae2; }
+    </style>
+</head>
+<body class="h-screen flex flex-col max-w-4xl mx-auto shadow-2xl bg-white">
+    <div class="bg-[#008069] p-4 text-white flex justify-between items-center">
+        <h1 class="font-bold text-xl">🤖 Centro Sacre - Admin</h1>
+        <div class="text-sm">Estado: <span id="status" class="text-green-300">Conectado</span></div>
+    </div>
+
+    <div id="chat-box" class="flex-1 overflow-y-auto p-4 chat-bg space-y-4">
+        <div class="text-center text-gray-500 text-sm my-4">-- Inicio del historial reciente --</div>
+        </div>
+
+    <div class="p-4 bg-[#f0f2f5] border-t flex gap-2">
+        <input type="text" id="phone" placeholder="521..." class="w-1/4 p-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#008069]" title="Número con código país (ej: 52155...)">
+        <input type="text" id="message" placeholder="Escribe tu respuesta..." class="flex-1 p-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#008069]" onkeypress="handleEnter(event)">
+        <button onclick="enviarMensaje()" class="bg-[#008069] text-white px-6 py-2 rounded-lg hover:bg-[#006d59] transition font-bold">Enviar ➤</button>
+    </div>
+
+    <script>
+   
+        async function actualizarChat() {
+            try {
+                const res = await fetch('/admin/history');
+                const historial = await res.json();
+                const chatBox = document.getElementById('chat-box');
+                
+
+                chatBox.innerHTML = '<div class="text-center text-gray-500 text-sm my-4">-- Últimos mensajes recibidos --</div>';
+                
+                historial.forEach(msg => {
+                    const esBot = msg.from === 'bot';
+                    const alineacion = esBot ? 'justify-end' : 'justify-start';
+                    const color = esBot ? 'bg-[#d9fdd3]' : 'bg-white';
+                    const usuario = esBot ? 'Tú' : msg.number;
+                    
+                    const html = `
+                        <div class="flex ${alineacion}">
+                            <div class="${color} p-2 px-4 rounded-lg shadow max-w-xs md:max-w-md">
+                                <div class="text-xs text-gray-500 font-bold mb-1">${usuario}</div>
+                                <div class="text-gray-800">${msg.body}</div>
+                                <div class="text-[10px] text-gray-400 text-right mt-1">${new Date(msg.timestamp).toLocaleTimeString()}</div>
+                            </div>
+                        </div>
+                    `;
+                    chatBox.innerHTML += html;
+                });
+                
+            } catch (e) { console.error('Error cargando chat', e); }
+        }
+
+        async function enviarMensaje() {
+            const phone = document.getElementById('phone').value;
+            const message = document.getElementById('message').value;
+            const btn = document.querySelector('button');
+
+            if (!phone || !message) return alert('Pon el número y el mensaje');
+
+            btn.innerText = '...';
+            
+            await fetch('/admin/send', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ phone, message })
+            });
+
+            document.getElementById('message').value = '';
+            btn.innerText = 'Enviar ➤';
+            actualizarChat();
+        }
+
+        function handleEnter(e) { if(e.key === 'Enter') enviarMensaje(); }
+
+   
+        setInterval(actualizarChat, 3000);
+        actualizarChat();
+    </script>
+</body>
+</html>
