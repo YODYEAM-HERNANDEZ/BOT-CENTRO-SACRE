@@ -9,14 +9,13 @@
     <style>
         body { background-color: #d1d7db; font-family: 'Segoe UI', sans-serif; }
         .chat-bg { background-color: #efeae2; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); opacity: 0.95; }
-        
         .msg-bubble { position: relative; padding: 8px 12px; border-radius: 8px; max-width: 75%; margin-bottom: 6px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); word-wrap: break-word; }
         .msg-cliente { background-color: #ffffff; align-self: flex-start; border-top-left-radius: 0; }
         .msg-admin { background-color: #d9fdd3; align-self: flex-end; border-top-right-radius: 0; }
         .msg-bot { background-color: #f0f2f5; align-self: flex-end; font-size: 0.9em; font-style: italic; border: 1px dashed #ccc; width: fit-content; }
         .active-chat { background-color: #e9edef; border-left: 4px solid #008069; }
-
-        /* Estilos para etiquetas y fotos */
+        
+        /* Estilos recuperados para etiquetas y archivos */
         .msg-actions { display: none; position: absolute; top: 0; right: 0; padding: 4px; background: rgba(255,255,255,0.9); border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); z-index: 10; }
         .msg-bubble:hover .msg-actions { display: flex; gap: 5px; }
         .msg-img { max-width: 250px; border-radius: 8px; cursor: pointer; margin-bottom: 5px; }
@@ -89,7 +88,7 @@
 
     <script>
         const QUICK_REPLIES = [
-            { title: "1. Condesa (7:00am)", text: `Hola 👋\nMe comunico para confirmar su cita de mañana en Condesa a las 07:00am con la fisioterapeuta Andrea Quintero ☀️\n\nDatos importantes:\n💫 Llegar 15 min antes.\n💫 Dirección: Baja California 354.\n💫 Ubicación: https://maps.app.goo.gl/VibfPG6iFyFtMv6D7\n\n💫Manejamos\n💫 Cancelaciones con 24 hrs de anticipación.\n\nGracias por confiar en Centro Sacre 🫶` },
+            { title: "1. Condesa (7:00am)", text: `Hola 👋\nMe comunico para confirmar su cita de mañana en Condesa a las 07:00am con la fisioterapeuta Andrea Quintero ☀️\n\nDatos importantes:\n💫 Llegar 15 min antes.\n💫 Dirección: Baja California 354.\n💫 Ubicación: https://maps.app.goo.gl/VibfPG6iFyFtMv6D7\n\n💫Manejamos\n💫\n\nGracias por confiar en Centro Sacre 🫶` },
             { title: "2. Santa Fe (9:00am)", text: `Hola 👋\nConfirmamos cita mañana en Santa Fe a las 9:00am con Grecia Zapata☀️\n\nDatos:\n💫 Llegar 15 min antes.\n💫 Dirección: Vasco de Quiroga 4299, Local 203.\n💫 Waze: https://waze.com/ul/h9g3qheze0\n\nGracias por confiar en Centro Sacre 🫶` },
             { title: "3. Ubicación Santa Fe", text: `Dirección Santa Fe ✌️\n💫 Vasco de Quiroga 4299, Local 203.\n💫 Waze: https://waze.com/ul/h9g3qheze0\n\n¡Conduce con precaución! 😃` }
         ];
@@ -137,11 +136,9 @@
         async function openChat(phone) {
             currentPhone = phone;
             document.getElementById('empty-state').style.display = 'none';
-            
-            // Botón de Llamada
+            // Botón de Llamada agregado
             const phoneLink = `<a href="tel:+${phone}" title="Llamar" class="ml-2 text-green-600 hover:text-green-800 text-lg"><i class="fas fa-phone-alt"></i></a>`;
             document.getElementById('chat-title').innerHTML = phone + phoneLink;
-            
             await loadMessages();
         }
 
@@ -153,7 +150,7 @@
             updateBotButton(data.isHuman);
             
             // Actualizar etiquetas en cabecera
-            const contactRes = await fetch('/api/contacts'); // Ineficiente pero seguro para este caso simple
+            const contactRes = await fetch('/api/contacts'); 
             const contacts = await contactRes.json();
             const me = contacts.find(c => c.phone === currentPhone);
             const headerTags = document.getElementById('header-tags');
@@ -165,10 +162,10 @@
             box.innerHTML = msgs.map(m => {
                 const cls = m.role === 'admin' ? 'msg-admin' : (m.role === 'bot' ? 'msg-bot' : 'msg-cliente');
                 
-                // --- LÓGICA DE MULTIMEDIA Y PINES ---
+                // --- AQUÍ ESTÁ EL ARREGLO VISUAL ---
                 let content = `<div class="whitespace-pre-wrap text-sm">${m.body}</div>`;
                 if(m.type === 'image') content = `<img src="${m.mediaUrl}" class="msg-img" onclick="window.open('${m.mediaUrl}')"><div class="text-xs">${m.body||''}</div>`;
-                if(m.type === 'file') content = `<div class="bg-gray-100 p-2 rounded flex items-center gap-2"><i class="fas fa-file"></i> <a href="${m.mediaUrl}" target="_blank" class="text-blue-600 underline text-sm">Ver Archivo</a></div>`;
+                if(m.type === 'file') content = `<div class="bg-gray-100 p-2 rounded flex items-center gap-2 cursor-pointer" onclick="window.open('${m.mediaUrl}')"><i class="fas fa-file-pdf text-red-500 text-xl"></i> <span class="text-blue-600 underline text-sm">Ver Archivo</span></div>`;
                 
                 const starIcon = m.isStarred ? '<i class="fas fa-star text-yellow-500 text-xs"></i>' : '';
                 const pinClass = m.isPinned ? 'border-l-4 border-yellow-400' : '';
@@ -187,16 +184,12 @@
         }
 
         async function msgAction(timestamp, type) {
-            // Toggle simple (si ya lo tiene, quitarlo no está implementado en front, solo añadir por simplicidad, o reusar logica anterior)
-            // Para simplificar, enviamos 'add' o 'remove' asumiendo estado actual, pero aquí forzamos 'add' o 'remove' toggleando en backend? 
-            // Mejor implementación:
             await fetch('/api/message-action', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, timestamp, type, action: 'add' }) }); 
-            // Nota: En la versión backend puse lógica de toggle si ya existe, así que siempre mandar 'add' funciona como toggle en array.
             loadMessages();
         }
 
         async function toggleTag(tag) {
-            await fetch('/api/tags', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, tag, action: 'add' }) }); // Backend filtra duplicados
+            await fetch('/api/tags', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, tag, action: 'add' }) }); 
             loadContacts(); loadMessages();
         }
 
