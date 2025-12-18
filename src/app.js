@@ -306,4 +306,4 @@ const main = async () => {
 
 m
 
-ain()
+main()
