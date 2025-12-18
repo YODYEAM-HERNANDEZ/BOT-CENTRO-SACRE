@@ -9,7 +9,6 @@
     <style>
         body { background-color: #d1d7db; font-family: 'Segoe UI', sans-serif; }
         .chat-bg { background-color: #efeae2; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); opacity: 0.95; }
-        
         .msg-bubble { position: relative; padding: 8px 12px; border-radius: 8px; max-width: 75%; margin-bottom: 6px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); word-wrap: break-word; }
         .msg-cliente { background-color: #ffffff; align-self: flex-start; border-top-left-radius: 0; }
         .msg-admin { background-color: #d9fdd3; align-self: flex-end; border-top-right-radius: 0; }
@@ -65,7 +64,6 @@
     </div>
 
     <script>
-        // TUS TEXTOS EXACTOS (Añadí saltos de línea \n para que se vean bien)
         const QUICK_REPLIES = [
             { 
                 title: "1. Condesa (7:00am Andrea)", 
@@ -92,7 +90,7 @@
                     <div class="text-xs text-gray-500 truncate">${q.text.substring(0,60)}...</div>
                 </div>`;
             });
-            setInterval(() => { loadContacts(); if(currentPhone) loadMessages(); }, 2000); // Actualiza cada 2s
+            setInterval(() => { loadContacts(); if(currentPhone) loadMessages(); }, 2000);
             loadContacts();
         }
 
@@ -128,13 +126,9 @@
             if(!currentPhone) return;
             const res = await fetch(`/api/chat?phone=${currentPhone}`);
             const data = await res.json();
-            
-            // Corrección CRÍTICA: Asegurar que leemos data.messages
             const msgs = data.messages || []; 
             const isHuman = data.isHuman;
-
             updateBotButton(isHuman);
-
             const box = document.getElementById('chat-history');
             box.innerHTML = msgs.map(m => {
                 const cls = m.role === 'admin' ? 'msg-admin' : (m.role === 'bot' ? 'msg-bot' : 'msg-cliente');
@@ -146,26 +140,19 @@
         }
 
         async function toggleBot() {
-            // Enviamos el estado DESEADO (si está en modo humano, queremos activar el bot, o sea active: true)
             const desiredActiveState = !isBotActive;
-            await fetch('/api/toggle-bot', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ phone: currentPhone, active: desiredActiveState }) 
-            });
-            loadMessages(); // Recargar para ver el cambio de botón
+            await fetch('/api/toggle-bot', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, active: desiredActiveState }) });
+            loadMessages();
         }
 
         function updateBotButton(isHumanMode) {
             const btn = document.getElementById('btn-toggle');
             btn.style.display = 'block';
             if (isHumanMode) {
-                // Si es humano, el bot está apagado. Botón rojo para indicar "OFF"
                 isBotActive = false; 
                 btn.innerText = '🔴 BOT OFF';
                 btn.className = 'px-3 py-1 rounded text-xs font-bold shadow bg-red-100 text-red-600 border border-red-200 uppercase';
             } else {
-                // Si NO es humano, el bot está prendido. Botón verde "ON"
                 isBotActive = true;
                 btn.innerText = '🟢 BOT ON';
                 btn.className = 'px-3 py-1 rounded text-xs font-bold shadow bg-green-100 text-green-600 border border-green-200 uppercase';
@@ -182,7 +169,7 @@
         }
 
         async function togglePinChat() {
-            await fetch('/api/pin-chat', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, action: 'pin' }) }); // Simplificado para togglear habría que revisar estado actual
+            await fetch('/api/pin-chat', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, action: 'pin' }) });
             loadContacts();
         }
         
@@ -192,7 +179,7 @@
         }
 
         function downloadBackup() { window.location.href = '/api/backup'; }
-
+        
         init();
     </script>
 </body>
