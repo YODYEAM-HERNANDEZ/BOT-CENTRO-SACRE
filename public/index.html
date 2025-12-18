@@ -89,23 +89,18 @@
     </div>
 
     <script>
-        const QUICK_REPLIES = [
-            { 
-                title: "1. Condesa (7:00am Andrea)", 
-                text: `Hola 👋\nMe comunico para confirmar su cita de mañana en Condesa a las 07:00am con la fisioterapeuta Andrea Quintero ☀️\n\nAquí algunos datos a tener en cuenta para tu consulta de primera vez 🪄\n\n💫Te pedimos llegar 15 min antes de tu consulta para firma de consentimiento informado 😊\n\n💫Te compartimos nuestra dirección en condesa ✌️\n💫 Baja California 354 hipódromo condesa\n💫 Contamos con un lugar de estacionamiento si está libre puedes utilizarlo con mucho gusto 🚗\n\n💫 Aquí el link con nuestra dirección 👇\n🔝 https://maps.app.goo.gl/VibfPG6iFyFtMv6D7\n\n💫Manejamos una penalización si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda que tiene la fisioterapeuta.\n\n💫 Ven con ropa cómoda o puedes traer ropa de deporte en una maletita 😉\n\nGracias por confiar en Centro Sacre 🫶` 
-            },
-            { 
-                title: "2. Santa Fe (9:00am Grecia)", 
-                text: `Hola 👋\nMe comunico para confirmar su cita del día mañana en Santa Fe a las 9:00am con la fisioterapeuta Grecia Zapata☀️\n\nAquí algunos datos a tener en cuenta para tu consulta de primera vez 🪄\n\n💫Te pedimos llegar 15 min antes de tu consulta para firma de consentimiento informado 😊\n\n💫Aquí nuestra dirección en Santa Fe ✌️\n💫 Vasco de Quiroga 4299, Ciudad de México, Distrito Federal 05370 local 203 arriba del Oxxo en aserrin\n💫 Contamos con estacionamiento en la plaza 🚗\n\n💫 Aquí el link con nuestra dirección 👇\n🔝 Usa Waze para conducir a Centro sacre Mx - Centro Infinito , Vasco de Quiroga, 4299, Ciudad de México:\nhttps://waze.com/ul/h9g3qheze0\n\n💫Manejamos una penalización si las cancelaciones no se realizan con 24 de antelación 🙏.\n\nGracias por confiar en Centro Sacre 🫶`
-            },
-            { 
-                title: "3. Ubicación Santa Fe", 
-                text: `Te compartimos nuestra dirección en Santa Fe ✌️\n\n💫 Vasco de Quiroga 4299, Ciudad de México, Distrito Federal 05370 local 203 arriba del Oxxo en aserrin\n💫 Contamos estacionamiento en la plaza 🚗\n\n💫 Aquí el link con nuestra dirección 👇\n🔝 Usa Waze para conducir a Centro sacre Mx - Centro Infinito , Vasco de Quiroga, 4299, Ciudad de México:\nhttps://waze.com/ul/h9g3qheze0\n\n💫 Conduce con precaución! y nos vemos pronto 😃`
-            }
-        ];
-
         let currentPhone = null;
         let isBotActive = true; 
+        let contactsCache = []; // Cache para poder verificar etiquetas
+
+        const QUICK_REPLIES = [
+            { title: "Condesa (11:00am Ana)", text: `Hola buenas tardes ✨\nMe comunico para confirmar su cita de mañana en Condesa a las 11:00am con la fisioterapeuta Ana Huacuja ☀️\nEn Centro Sacre manejamos una penalización si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda que tiene la fisioterapeuta ya que es casi imposible que otra paciente ocupe el espacio debido a la precipitación y por respeto al tiempo de la fisioterapeuta` },
+            { title: "Condesa (5:00pm)", text: `Hola buenos dias ✨\nMe comunico para confirmar su cita de mañana en Condesa a las 5:00pm ☀️\nEn Centro Sacre manejamos una penalización si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda que tiene la fisioterapeuta ya que es casi imposible que otra paciente ocupe el espacio debido a la precipitación y por respeto al tiempo de la fisioterapeuta.` },
+            { title: "Condesa (7:00pm Andrea)", text: `Hola buen dia ✨\nMe comunico para confirmar su cita de mañana en Condesa a las 07:00pm con la fisioterapeuta Andrea Quintero ☀️\nEn Centro Sacre manejamos una penalización si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda que tiene la fisioterapeuta ya que es casi imposible que otra paciente ocupe el espacio debido a la precipitación y por respeto al tiempo de la fisioterapeuta.` },
+            { title: "Condesa (8:00am Nalleli)", text: `Hola buenos dias ✨\nMe comunico para confirmar su cita de mañana en *Condesa* a las 08:00am con la fisioterapeuta *Nalleli Silva* ☀️\nEn Centro Sacre manejamos una *penalización* si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda que tiene la fisioterapeuta ya que es casi imposible que otra paciente ocupe el espacio debido a la precipitación y por respeto al tiempo de la fisioterapeuta.` },
+            { title: "Condesa (7:00am Andrea - 1ra Vez)", text: `Hola 👋\nMe comunico para confirmar su cita de mañana en Condesa a las 07:00am con la fisioterapeuta Andrea Quintero ☀️\n\nAquí algunos datos a tener en cuenta para tu consulta de primera vez 🪄\n\n💫Te pedimos llegar 15 min antes de tu consulta para firma de consentimiento informado 😊\n\n💫Te compartimos nuestra dirección en condesa ✌️\n💫 Baja California 354 hipódromo condesa\n💫 Contamos con un lugar de estacionamiento si está libre puedes utilizarlo con mucho gusto 🚗\n\n💫 Aquí el link con nuestra dirección 👇\n🔝 https://maps.app.goo.gl/VibfPG6iFyFtMv6D7\n💫 Manejamos una penalización si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda que tiene la fisioterapeuta.\n💫 Ven con ropa cómoda o puedes traer ropa de deporte en una maletita 😉\n\nGracias por confiar en Centro Sacre 🫶` },
+            { title: "Santa Fe (9:00am Grecia - 1ra Vez)", text: `Hola 👋\nMe comunico para confirmar su cita del día mañana en Santa Fe a las 9:00am con la fisioterapeuta Grecia Zapata ☀️\n\nAquí algunos datos a tener en cuenta para tu consulta de primera vez 🪄\n\n💫Te pedimos llegar 15 min antes de tu consulta para firma de consentimiento informado 😊\n\n💫Aquí nuestra dirección en Santa Fe ✌️\n💫 Vasco de Quiroga 4299, Ciudad de México, Distrito Federal 05370local 203 arriba del Oxxo en aserrin\n💫 Contamos con estacionamiento en la plaza 🚗\n\n💫 Aquí el link con nuestra dirección 👇\n🔝 Usa Waze para conducir a Centro sacre Mx - Centro Infinito , Vasco de Quiroga, 4299, Ciudad de México: https://waze.com/ul/h9g3qheze0\n\n💫 Manejamos una penalización si las cancelaciones no se realizan con 24 de antelación 🙏.\n\nGracias por confiar en Centro Sacre 🫶` }
+        ];
         
         function init() {
             const list = document.getElementById('quick-list');
@@ -127,10 +122,10 @@
         async function loadContacts() {
             try {
                 const res = await fetch('/api/contacts');
-                const contacts = await res.json();
+                contactsCache = await res.json(); // Guardamos en cache global
                 const list = document.getElementById('contacts-list');
                 
-                list.innerHTML = contacts.map(c => {
+                list.innerHTML = contactsCache.map(c => {
                     let tagsHtml = c.tags.map(t => {
                         let color = 'tag-blue';
                         if(t==='Urgente') color = 'tag-red';
@@ -166,10 +161,8 @@
             const msgs = data.messages || []; 
             updateBotButton(data.isHuman);
             
-            // Actualizar etiquetas en cabecera
-            const contactRes = await fetch('/api/contacts'); 
-            const contacts = await contactRes.json();
-            const me = contacts.find(c => c.phone === currentPhone);
+            // Actualizar etiquetas en cabecera usando la caché
+            const me = contactsCache.find(c => c.phone === currentPhone);
             const headerTags = document.getElementById('header-tags');
             if(me && me.tags) {
                 headerTags.innerHTML = me.tags.map(t => {
@@ -185,7 +178,6 @@
             box.innerHTML = msgs.map(m => {
                 const cls = m.role === 'admin' ? 'msg-admin' : (m.role === 'bot' ? 'msg-bot' : 'msg-cliente');
                 
-                // --- VISUALIZACIÓN DE ARCHIVOS ---
                 let content = `<div class="whitespace-pre-wrap text-sm">${m.body}</div>`;
                 
                 if(m.type === 'image') {
@@ -219,9 +211,16 @@
             loadMessages();
         }
 
-        async function toggleTag(tag) {
-            await fetch('/api/tags', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, tag, action: 'add' }) }); 
-            loadContacts(); loadMessages();
+        // --- ARREGLO DE ETIQUETAS: AÑADIR/QUITAR ---
+        async function toggleTag(tagName) {
+            // Verificar si el contacto ya tiene la etiqueta
+            const contact = contactsCache.find(c => c.phone === currentPhone);
+            const hasTag = contact && contact.tags && contact.tags.includes(tagName);
+            const action = hasTag ? 'remove' : 'add'; // Si la tiene, quitarla. Si no, ponerla.
+
+            await fetch('/api/tags', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, tag: tagName, action }) }); 
+            loadContacts(); 
+            setTimeout(() => openChat(currentPhone), 100); // Recargar cabecera
         }
 
         async function toggleBot() {

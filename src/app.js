@@ -22,11 +22,12 @@ const registrarMensaje = (telefono, role, body, mediaUrl = null) => {
     const timestamp = Date.now()
     
     let type = 'text';
-    // LÓGICA DE ARCHIVOS
+    // LÓGICA DE ARCHIVOS MEJORADA
     if (mediaUrl) {
         if (mediaUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i)) type = 'image';
         else type = 'file';
     } else if (body && body.includes('_event_')) {
+        // Intentar rescatar URL si viene en el cuerpo del mensaje de sistema
         if (body.includes('http')) {
              mediaUrl = body; 
              type = 'file';
@@ -83,7 +84,7 @@ const flowNosotros = addKeyword(['quienes', 'somos'])
         'Más que una clínica, somos un espacio que conecta cuerpo, mente y emoción, promoviendo una salud que cuida la vida misma 💗'
     ].join('\n\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
 
-// --- MODIFICADO: FACTURA ---
+// --- FACTURA (CORREGIDO) ---
 const flowFactura = addKeyword(['factura'])
     .addAnswer([
         'Puedes solicitar tu factura enviando un correo a: centrosacre@gmail.com',
@@ -97,7 +98,7 @@ const flowCancelar = addKeyword(['cancelar', 'baja'])
         'Gracias por tu comprensión 💗'
     ].join('\n\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
 
-// --- NUEVO: VAS TARDE (Opción 10) ---
+// --- VAS TARDE (Opción 10 AGREGADA) ---
 const flowTarde = addKeyword(['tarde', 'retraso', 'llegar'])
     .addAnswer([
         '😢 Ntp! Entendemos perfecto 👌',
@@ -172,21 +173,22 @@ const flowPostServicio = addKeyword('INTERNAL_POST_SERVICE')
         return gotoFlow(flowDespedida)
     })
 
+// --- DESCIPCIONES LARGAS DE SERVICIOS (Del PDF) ---
 const flowDescripcionServicios = addKeyword('INTERNAL_DESC_SERVICIOS')
     .addAnswer('Escribe el número del servicio 👇', { capture: true }, async (ctx, { flowDynamic, gotoFlow, fallBack }) => { 
         const op = ctx.body.trim(); 
         const d = { 
-            '1': '🫶 *Fisioterapia*', 
-            '2': '👐 *Osteopatía*', 
-            '3': '🚶🏻‍♀️ *Reeducación postural global*', 
-            '4': '🩷 *Rehabilitación de Suelo Pélvico*', 
-            '5': '👶 *Osteopatía Pediátrica*', 
-            '6': '🤰 *Preparación para el parto*', 
-            '7': '🤱 *Rehabilitación Post embarazo*', 
-            '8': '🌿 *Mastitis*', 
-            '9': '🚑 *Rehabilitación oncológica*', 
-            '10': '🦵 *Drenaje linfático*', 
-            '11': '🙋🏻‍♂️ *Rehabilitación suelo pélvico masculino*' 
+            '1': '🫶 *Fisioterapia:*\nNuestro objetivo es que logres recuperar la movilidad, seguridad y eliminar dolor a través también de un abordaje integral y sistémico donde se abarque el inicio de su disfunción con la ayuda de técnicas manuales, liberación miofascial, cambios en su estilo de vida y apreciación de la su salud desde un enfoque preventivo.', 
+            '2': '👐 *Osteopatía:*\nEvaluamos y tratamos a traves de un abordaje integral observando el origen de la disfunción la cual se aborda a través de técnicas manuales a los tejidos y estructuras del cuerpo observándose como una unidad completa en donde si un sistema está en desequilibrio automáticamente altera la función del cuerpo en general.', 
+            '3': '🚶🏻‍♀️ *RPG (Reeducación Postural Global):*\nEs un método fisioterapéutico eficaz para tratar diferentes patologías del sistema muscular y óseo, especialmente aquellas que tienen relación con la postura. Consiste en la realización de posturas físicas activas, poniendo especial atención en la respiración y trabajando distintas regiones y sistemas de coordinación muscular.', 
+            '4': '🩷 *Suelo Pélvico:*\nAbordamos disfunciones como incontinencia urinaria, incontinencia fecal, vaginismo, prolapsos vaginales, alteraciones sexuales, dolor pélvico, dispareunia y estreñimiento. Buscamos reintegrarte a tu vida diaria recuperando fuerza y movilidad con técnicas manuales y aparatología especializada.', 
+            '5': '👶 *Osteopatía Pediátrica:*\nEs un tratamiento no invasivo que ayuda a eliminar tensiones en el recién nacido posiblemente generadas por posiciones uterinas, cesáreas o expulsivos prolongados. Ayuda también en reflujo, cólico y estreñimiento restableciendo una correcta movilidad del sistema digestivo.', 
+            '6': '🤰 *Preparación para el parto:*\nDurante el embarazo el cuerpo de la mujer desarrolla grandes cambios. En Centro Sacre trabajamos desde la semana 13 reeducando postura y core. Llegando a la semana 33, el conocer tu pelvis y cadera ayudará a conducir a tu bebé al canal del parto, junto con respiraciones, masaje perineal y un buen pujo.', 
+            '7': '🤱 *Rehabilitación Post embarazo:*\nEl post parto trae consigo cambios mecánicos, musculares y posturales. Te acompañamos integrándote a tu vida diaria, dando fuerza y reeducación en musculatura abdominal y pélvica. Tratamos cicatrices (cesárea), diástasis y prevenimos futuras disfunciones.', 
+            '8': '🌿 *Mastitis / Lactancia:*\nTratamos posibles alteraciones en la lactancia como mastitis o algún conducto tapado que genere dolor al momento de lactar con la ayuda de técnicas manuales y aparatología para liberar los ductos y favorecer una lactancia favorable.', 
+            '9': '🚑 *Rehabilitación oncológica:*\nEn Centro Sacre te acompañamos en cada una de las etapas de tu proceso oncológico. Por medio de diferentes técnicas manuales y equipos identificamos las causas que afectan o interfieren en los efectos secundarios posteriores a tu cirugía (cáncer de ovario, útero, mama, próstata, colon).', 
+            '10': '🦵 *Drenaje linfático:*\nLas alteraciones venosas y linfáticas (flebitis, trombosis, linfedema) se tratan por medio de técnicas manuales de drenaje linfático, uso de diferentes equipos y ejercicios para reeducar estos sistemas y mejorar tu calidad de vida.', 
+            '11': '🙋🏻‍♂️ *Suelo Pélvico Masculino:*\nAbordamos la sexualidad sana y plena, reeducación postural y tratamientos para el dolor. Tratamos alteraciones como eyaculación precoz, dolor pélvico, disfunciones genitourinarias y rehabilitación post-quirúrgica de próstata.' 
         }; 
         if(d[op]) { 
             await flowDynamic(d[op]); 
@@ -200,7 +202,7 @@ const flowServicios = addKeyword(['servicios', 'tratamientos'])
         '¡Claro! 🌸 En Centro Sacre contamos con atención especializada en:',
         '1️⃣ 🫶 Fisioterapia',
         '2️⃣ 👐 Osteopatía',
-        '3️⃣ 🚶🏻‍♀️ Reeducación postural global',
+        '3️⃣ 🚶🏻‍♀️ Reeducación postural global (RPG)',
         '4️⃣ 🩷 Rehabilitación de Suelo Pélvico',
         '5️⃣ 👶 Osteopatía Pediátrica',
         '6️⃣ 🤰 Preparación para el parto',
@@ -228,10 +230,8 @@ const flowMenu = addKeyword(['Menu', 'menu', 'menú'])
         '9️⃣ Hablar con un asesor 👩‍💻',
         '1️⃣0️⃣ Vas tarde 🏃‍♀️'
     ].join('\n'), { capture: true }, async (ctx, { gotoFlow, fallBack }) => {
-        // Lógica corregida para la opción 10
         const op = ctx.body.trim();
-        
-        // Verificar 10 primero para evitar conflicto con 1
+        // Verificar 10 primero
         if(['10', 'diez', 'tarde', 'vas tarde'].some(x => op.includes(x))) return gotoFlow(flowTarde);
         
         if(['1', 'servicio', 'servicios'].some(x => op.includes(x))) return gotoFlow(flowServicios);
@@ -409,7 +409,6 @@ const main = async () => {
     })
 
     provider.on('message', (payload) => {
-        // CORRECCIÓN PARA ARCHIVOS
         let mediaUrl = null;
         if (payload.url) mediaUrl = payload.url; 
         else if (payload?.message?.imageMessage?.url) mediaUrl = payload.message.imageMessage.url;
