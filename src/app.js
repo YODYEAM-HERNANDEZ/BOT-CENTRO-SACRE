@@ -304,6 +304,4 @@ const main = async () => {
     httpServer(+process.env.PORT || 3008)
 }
 
-m
-
 main()
