@@ -22,12 +22,11 @@ const registrarMensaje = (telefono, role, body, mediaUrl = null) => {
     const timestamp = Date.now()
     
     let type = 'text';
-    // LÓGICA DE ARCHIVOS MEJORADA
+    // LÓGICA DE ARCHIVOS
     if (mediaUrl) {
         if (mediaUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i)) type = 'image';
         else type = 'file';
     } else if (body && body.includes('_event_')) {
-        // Intentar rescatar URL si viene en el cuerpo del mensaje de sistema
         if (body.includes('http')) {
              mediaUrl = body; 
              type = 'file';
@@ -84,7 +83,7 @@ const flowNosotros = addKeyword(['quienes', 'somos'])
         'Más que una clínica, somos un espacio que conecta cuerpo, mente y emoción, promoviendo una salud que cuida la vida misma 💗'
     ].join('\n\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
 
-// --- FACTURA (CORREGIDO) ---
+// --- FACTURA ---
 const flowFactura = addKeyword(['factura'])
     .addAnswer([
         'Puedes solicitar tu factura enviando un correo a: centrosacre@gmail.com',
@@ -98,7 +97,7 @@ const flowCancelar = addKeyword(['cancelar', 'baja'])
         'Gracias por tu comprensión 💗'
     ].join('\n\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
 
-// --- VAS TARDE (Opción 10 AGREGADA) ---
+// --- VAS TARDE ---
 const flowTarde = addKeyword(['tarde', 'retraso', 'llegar'])
     .addAnswer([
         '😢 Ntp! Entendemos perfecto 👌',
@@ -173,7 +172,6 @@ const flowPostServicio = addKeyword('INTERNAL_POST_SERVICE')
         return gotoFlow(flowDespedida)
     })
 
-// --- DESCIPCIONES LARGAS DE SERVICIOS (Del PDF) ---
 const flowDescripcionServicios = addKeyword('INTERNAL_DESC_SERVICIOS')
     .addAnswer('Escribe el número del servicio 👇', { capture: true }, async (ctx, { flowDynamic, gotoFlow, fallBack }) => { 
         const op = ctx.body.trim(); 
@@ -409,6 +407,7 @@ const main = async () => {
     })
 
     provider.on('message', (payload) => {
+        // CORRECCIÓN PARA ARCHIVOS
         let mediaUrl = null;
         if (payload.url) mediaUrl = payload.url; 
         else if (payload?.message?.imageMessage?.url) mediaUrl = payload.message.imageMessage.url;

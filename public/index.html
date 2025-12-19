@@ -32,6 +32,7 @@
         <div class="bg-[#f0f2f5] p-3 flex justify-between items-center border-b h-16">
             <div class="font-bold text-gray-700">Centro Sacre CRM</div>
             <div class="flex gap-3">
+                <button onclick="newChat()" title="Nuevo Chat"><i class="fas fa-plus-circle text-lg hover:text-green-600"></i></button>
                 <button onclick="downloadBackup()" title="Respaldo"><i class="fas fa-download text-lg"></i></button>
                 <button onclick="loadContacts()" title="Refrescar"><i class="fas fa-sync text-lg"></i></button>
             </div>
@@ -91,7 +92,7 @@
     <script>
         let currentPhone = null;
         let isBotActive = true; 
-        let contactsCache = []; // Cache para poder verificar etiquetas
+        let contactsCache = []; 
 
         const QUICK_REPLIES = [
             { title: "Condesa (11:00am Ana)", text: `Hola buenas tardes ✨\nMe comunico para confirmar su cita de mañana en Condesa a las 11:00am con la fisioterapeuta Ana Huacuja ☀️\nEn Centro Sacre manejamos una penalización si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda que tiene la fisioterapeuta ya que es casi imposible que otra paciente ocupe el espacio debido a la precipitación y por respeto al tiempo de la fisioterapeuta` },
@@ -123,7 +124,7 @@
         async function loadContacts() {
             try {
                 const res = await fetch('/api/contacts');
-                contactsCache = await res.json(); // Guardamos en cache global
+                contactsCache = await res.json(); 
                 const list = document.getElementById('contacts-list');
                 
                 list.innerHTML = contactsCache.map(c => {
@@ -147,6 +148,11 @@
             } catch(e) { console.error(e); }
         }
 
+        function newChat() {
+            const num = prompt("Ingresa el número del cliente (con código de país):");
+            if(num) openChat(num.replace(/\D/g,''));
+        }
+
         async function openChat(phone) {
             currentPhone = phone;
             document.getElementById('empty-state').style.display = 'none';
@@ -162,9 +168,17 @@
             const msgs = data.messages || []; 
             updateBotButton(data.isHuman);
             
-            // Actualizar etiquetas en cabecera usando la caché
             const me = contactsCache.find(c => c.phone === currentPhone);
             const headerTags = document.getElementById('header-tags');
+            
+            // Actualizar botón de PIN CHAT
+            const pinBtn = document.getElementById('btn-pin-chat');
+            if (me && me.isChatPinned) {
+                pinBtn.classList.replace('text-gray-400', 'text-green-600');
+            } else {
+                pinBtn.classList.replace('text-green-600', 'text-gray-400');
+            }
+
             if(me && me.tags) {
                 headerTags.innerHTML = me.tags.map(t => {
                      let color = 'tag-blue';
@@ -193,6 +207,10 @@
                 
                 const starIcon = m.isStarred ? '<i class="fas fa-star text-yellow-500 text-xs"></i>' : '';
                 const pinClass = m.isPinned ? 'border-l-4 border-yellow-400' : '';
+                
+                // Color iconos según estado
+                const starColor = m.isStarred ? 'text-yellow-500' : 'text-gray-300';
+                const pinColor = m.isPinned ? 'text-green-600' : 'text-gray-300';
 
                 return `<div class="msg-bubble ${cls} ${pinClass} group">
                             ${content}
@@ -200,14 +218,15 @@
                                 ${starIcon} ${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
                             </div>
                             <div class="msg-actions">
-                                <button onclick="msgAction(${m.timestamp}, 'star', ${m.isStarred})" title="Destacar"><i class="fas fa-star text-yellow-500"></i></button>
-                                <button onclick="msgAction(${m.timestamp}, 'pin', ${m.isPinned})" title="Fijar"><i class="fas fa-thumbtack text-gray-500"></i></button>
+                                <button onclick="msgAction(${m.timestamp}, 'star', ${m.isStarred})" title="Destacar"><i class="fas fa-star ${starColor}"></i></button>
+                                <button onclick="msgAction(${m.timestamp}, 'pin', ${m.isPinned})" title="Fijar"><i class="fas fa-thumbtack ${pinColor}"></i></button>
                             </div>
                         </div>`
             }).join('');
         }
 
         async function msgAction(timestamp, type, isCurrentlyActive) {
+            // Si está activo, lo quitamos. Si no, lo agregamos.
             const action = isCurrentlyActive ? 'remove' : 'add';
             await fetch('/api/message-action', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, timestamp, type, action }) }); 
             loadMessages();
@@ -216,6 +235,7 @@
         async function toggleTag(tagName) {
             const contact = contactsCache.find(c => c.phone === currentPhone);
             const hasTag = contact && contact.tags && contact.tags.includes(tagName);
+            // Si tiene el tag, removemos. Si no, agregamos.
             const action = hasTag ? 'remove' : 'add';
 
             await fetch('/api/tags', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, tag: tagName, action }) }); 
@@ -226,10 +246,12 @@
         async function togglePinChat() {
             const contact = contactsCache.find(c => c.phone === currentPhone);
             const currentStatus = contact ? contact.isChatPinned : false;
+            // Si está pineado, despineamos.
             const action = currentStatus ? 'unpin' : 'pin';
 
             await fetch('/api/pin-chat', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, action }) });
             loadContacts();
+            setTimeout(() => openChat(currentPhone), 100); 
         }
 
         async function toggleBot() {
