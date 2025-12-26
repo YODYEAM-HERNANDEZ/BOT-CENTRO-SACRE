@@ -24,14 +24,12 @@
         .msg-img:hover { transform: scale(1.02); }
         
         .badge-tag { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-right: 2px; text-transform: uppercase; }
-        /* COLORES SOLICITADOS */
         .tag-blue { background-color: #cce5ff; color: #004085; }
         .tag-red { background-color: #fce4ec; color: #c2185b; border: 1px solid #f8bbd0; } 
         .tag-orange { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; } 
         .tag-yellow { background-color: #ffffcc; color: #666600; border: 1px solid #e6e600; } 
         .tag-green { background-color: #d4edda; color: #155724; }
 
-        /* SCROLLBAR */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 3px; }
         
@@ -45,6 +43,7 @@
                 <div class="font-bold text-gray-700">Centro Sacre CRM</div>
                 <div class="flex gap-3">
                     <button onclick="newChat()" title="Nuevo Chat"><i class="fas fa-plus-circle text-lg hover:text-green-600"></i></button>
+                    <button onclick="downloadBackup()" title="Descargar Respaldo"><i class="fas fa-download text-lg"></i></button>
                     <button onclick="loadContacts()" title="Refrescar"><i class="fas fa-sync text-lg"></i></button>
                 </div>
             </div>
@@ -243,8 +242,6 @@
 
                 const starIcon = m.isStarred ? '<i class="fas fa-star text-yellow-500 text-xs"></i>' : '';
                 const pinClass = m.isPinned ? 'border-l-4 border-yellow-400' : '';
-
-                // AQUI AGREGAMOS EL ID AL ONCLICK
                 const msgId = m.id || '';
 
                 return `<div class="msg-bubble ${cls} ${pinClass} group">
@@ -282,7 +279,6 @@
             loadMessages();
         }
 
-        // NUEVA FUNCIÓN DE REACCIÓN
         async function sendReaction(messageId, emoji) {
             if(!messageId) {
                 alert("Este mensaje es antiguo y no tiene ID guardado para reaccionar.");
@@ -293,8 +289,6 @@
                 headers: {'Content-Type': 'application/json'}, 
                 body: JSON.stringify({ phone: currentPhone, messageId, emoji }) 
             }); 
-            // Feedback visual: Recargar no muestra la reacción en el chat local inmediatamente a menos que guardemos el evento de reacción, 
-            // pero en WhatsApp del cliente ya apareció.
         }
 
         async function toggleTag(tagName) {
@@ -349,6 +343,8 @@
             const newName = prompt("Editar nombre del contacto:", document.getElementById('chat-title').innerText.replace('...', '').trim());
             if(newName) { await fetch('/api/save-name', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, name: newName }) }); loadContacts(); }
         }
+
+        function downloadBackup() { window.location.href = '/api/backup'; }
 
         function newChat() {
             const num = prompt("Ingresa el número (con código de país, ej: 521...):");
