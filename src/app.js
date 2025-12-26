@@ -229,8 +229,8 @@ const flowServicios = addKeyword(['servicios', 'tratamientos'])
         '7️⃣ 🤱 Rehabilitación Post embarazo',
         '8️⃣ 🌿 Mastitis',
         '9️⃣ 🚑 Rehabilitación oncológica',
-        '10️⃣ 🦵 Drenaje linfático',
-        '11️⃣ 🙋🏻‍♂️ Rehabilitación suelo pélvico masculino',
+        '1️⃣0️⃣ 🦵 Drenaje linfático',
+        '1️⃣1️⃣ 🙋🏻‍♂️ Rehabilitación suelo pélvico masculino',
         '',
         '*(Escribe el número del servicio para más detalles)*'
     ].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowDescripcionServicios))
@@ -248,7 +248,7 @@ const flowMenu = addKeyword(['Menu', 'menu', 'menú'])
         '7️⃣ Solicitar factura 🧾',
         '8️⃣ ¿Quiénes somos? 💫',
         '9️⃣ Hablar con un asesor 👩‍💻',
-        '10️⃣ Vas tarde 🏃‍♀️'
+        '1️⃣0️⃣ Vas tarde 🏃‍♀️'
     ].join('\n'), { capture: true }, async (ctx, { gotoFlow, fallBack }) => {
         const op = ctx.body.trim();
 
