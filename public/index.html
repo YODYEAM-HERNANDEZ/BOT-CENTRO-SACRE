@@ -24,6 +24,7 @@
         .msg-img:hover { transform: scale(1.02); }
         
         .badge-tag { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-right: 2px; text-transform: uppercase; }
+        /* COLORES ETIQUETAS */
         .tag-blue { background-color: #cce5ff; color: #004085; }
         .tag-red { background-color: #fce4ec; color: #c2185b; border: 1px solid #f8bbd0; } 
         .tag-orange { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; } 
@@ -100,9 +101,9 @@
         <div class="bg-white rounded p-6 w-80 shadow-lg">
             <h2 class="font-bold mb-4 text-gray-700">🏷️ Gestión de Etiquetas</h2>
             <div class="space-y-2">
-                <button onclick="toggleTag('Atención')" class="w-full text-left p-2 border rounded hover:bg-red-50 text-red-700 font-semibold">🟥 Atención</button>
-                <button onclick="toggleTag('Tarde')" class="w-full text-left p-2 border rounded hover:bg-yellow-50 text-yellow-700 font-semibold">🟧 Tarde</button>
-                <button onclick="toggleTag('Pendiente')" class="w-full text-left p-2 border rounded hover:bg-yellow-100 text-yellow-800 font-semibold">🟨 Pendiente</button>
+                <button onclick="toggleTag('Atención')" class="w-full text-left p-2 border rounded hover:bg-red-50 text-red-700 font-semibold">🟥 Atención (Rojo)</button>
+                <button onclick="toggleTag('Tarde')" class="w-full text-left p-2 border rounded hover:bg-yellow-50 text-yellow-700 font-semibold">🟧 Tarde (Naranja)</button>
+                <button onclick="toggleTag('Pendiente')" class="w-full text-left p-2 border rounded hover:bg-yellow-100 text-yellow-800 font-semibold">🟨 Pendiente (Amarillo)</button>
                 <button onclick="toggleTag('Solicita Factura')" class="w-full text-left p-2 border rounded hover:bg-blue-50 text-blue-700">🟦 Solicita Factura</button>
                 <button onclick="toggleTag('Cita Confirmada')" class="w-full text-left p-2 border rounded hover:bg-green-50 text-green-700">🟩 Cita Confirmada</button>
             </div>
@@ -297,7 +298,7 @@
             const action = hasTag ? 'remove' : 'add';
             await fetch('/api/tags', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, tag: tagName, action }) }); 
             loadContacts(); 
-            setTimeout(() => openChat(currentPhone), 100);
+            setTimeout(() => openChat(currentPhone), 200);
         }
 
         async function togglePinChat() {
