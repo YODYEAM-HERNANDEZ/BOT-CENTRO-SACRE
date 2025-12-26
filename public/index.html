@@ -8,50 +8,67 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { background-color: #d1d7db; font-family: 'Segoe UI', sans-serif; }
-        .chat-bg { background-color: #efeae2; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); opacity: 0.95; }
+        .chat-bg { background-color: #efeae2; opacity: 0.95; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
+        
         .msg-bubble { position: relative; padding: 8px 12px; border-radius: 8px; max-width: 75%; margin-bottom: 6px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); word-wrap: break-word; }
         .msg-cliente { background-color: #ffffff; align-self: flex-start; border-top-left-radius: 0; }
         .msg-admin { background-color: #d9fdd3; align-self: flex-end; border-top-right-radius: 0; }
         .msg-bot { background-color: #f0f2f5; align-self: flex-end; font-size: 0.9em; font-style: italic; border: 1px dashed #ccc; width: fit-content; }
+        
         .active-chat { background-color: #e9edef; border-left: 4px solid #008069; }
         
-        .msg-actions { display: none; position: absolute; top: 0; right: 0; padding: 4px; background: rgba(255,255,255,0.9); border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); z-index: 10; }
-        .msg-bubble:hover .msg-actions { display: flex; gap: 5px; }
-        .msg-img { max-width: 250px; border-radius: 8px; cursor: pointer; margin-bottom: 5px; }
+        .msg-actions { display: none; position: absolute; top: -25px; right: 0; padding: 4px; background: rgba(255,255,255,0.95); border-radius: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); z-index: 10; gap: 5px; align-items: center; border: 1px solid #ddd; }
+        .msg-bubble:hover .msg-actions { display: flex; }
+        
+        .msg-img { max-width: 250px; border-radius: 8px; cursor: pointer; margin-bottom: 5px; transition: transform 0.2s; }
+        .msg-img:hover { transform: scale(1.02); }
         
         .badge-tag { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-right: 2px; text-transform: uppercase; }
+        /* COLORES SOLICITADOS */
         .tag-blue { background-color: #cce5ff; color: #004085; }
-        .tag-red { background-color: #f8d7da; color: #721c24; }
+        .tag-red { background-color: #fce4ec; color: #c2185b; border: 1px solid #f8bbd0; } 
+        .tag-orange { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; } 
+        .tag-yellow { background-color: #ffffcc; color: #666600; border: 1px solid #e6e600; } 
         .tag-green { background-color: #d4edda; color: #155724; }
-        .tag-purple { background-color: #e9d5ff; color: #581c87; }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 3px; }
+        
+        .link-style { color: #027eb5; text-decoration: underline; word-break: break-all; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden">
-
     <div class="w-1/3 bg-white border-r flex flex-col min-w-[320px]">
-        <div class="bg-[#f0f2f5] p-3 flex justify-between items-center border-b h-16">
-            <div class="font-bold text-gray-700">Centro Sacre CRM</div>
-            <div class="flex gap-3">
-                <button onclick="newChat()" title="Nuevo Chat"><i class="fas fa-plus-circle text-lg hover:text-green-600"></i></button>
-                <button onclick="downloadBackup()" title="Respaldo"><i class="fas fa-download text-lg"></i></button>
-                <button onclick="loadContacts()" title="Refrescar"><i class="fas fa-sync text-lg"></i></button>
+        <div class="bg-[#f0f2f5] p-3 border-b">
+            <div class="flex justify-between items-center mb-2">
+                <div class="font-bold text-gray-700">Centro Sacre CRM</div>
+                <div class="flex gap-3">
+                    <button onclick="newChat()" title="Nuevo Chat"><i class="fas fa-plus-circle text-lg hover:text-green-600"></i></button>
+                    <button onclick="loadContacts()" title="Refrescar"><i class="fas fa-sync text-lg"></i></button>
+                </div>
             </div>
+            <input type="text" id="search-contacts" placeholder="🔍 Buscar nombre o teléfono..." class="w-full p-2 rounded border text-sm" onkeyup="filterContacts()">
         </div>
         <div id="contacts-list" class="flex-1 overflow-y-auto"></div>
     </div>
 
     <div class="flex-1 flex flex-col bg-[#efeae2] relative min-w-[400px]">
         <div id="empty-state" class="absolute inset-0 z-10 bg-[#f0f2f5] flex justify-center items-center">
-            <h1 class="text-2xl text-gray-400">Selecciona un chat</h1>
+            <div class="text-center">
+                <h1 class="text-2xl text-gray-400">Centro Sacre</h1>
+                <p class="text-gray-400 text-sm">Selecciona un chat para comenzar</p>
+            </div>
         </div>
 
         <div class="bg-[#f0f2f5] p-3 flex justify-between items-center h-16 border-b z-20 shadow-sm">
             <div class="flex items-center w-2/3 gap-2">
                 <div id="chat-title" class="font-bold cursor-pointer truncate" onclick="editName()">...</div>
                 <button id="btn-pin-chat" onclick="togglePinChat()" class="text-gray-400 hover:text-green-600" title="Fijar Chat"><i class="fas fa-thumbtack"></i></button>
-                <div id="header-tags" class="flex gap-1 ml-2"></div>
+                <div id="header-tags" class="flex gap-1 ml-2 flex-wrap"></div>
             </div>
             <div class="flex items-center gap-3">
+                <input type="text" id="search-in-chat" placeholder="🔍 Buscar en chat..." class="p-1 rounded border text-xs w-32 hidden md:block" onkeyup="searchInChat()">
                 <button onclick="document.getElementById('modal-tags').classList.remove('hidden')" class="text-gray-600 hover:text-blue-600" title="Etiquetas"><i class="fas fa-tag"></i></button>
                 <button onclick="toggleBot()" id="btn-toggle" class="hidden px-3 py-1 rounded text-xs font-bold shadow transition uppercase"></button>
             </div>
@@ -59,33 +76,38 @@
 
         <div id="chat-history" class="flex-1 overflow-y-auto p-4 chat-bg flex flex-col gap-1"></div>
 
+        <div id="warning-24h" class="hidden bg-red-100 text-red-700 text-xs p-1 text-center border-t border-red-200">
+            ⚠️ Ventana de 24h cerrada. Es probable que el mensaje no llegue si no usas una Plantilla.
+        </div>
+
         <div class="bg-[#f0f2f5] p-3 flex gap-2 items-end">
-            <button onclick="document.getElementById('modal-quick').classList.remove('hidden')" class="text-xl p-2">⚡</button>
-            <textarea id="msg-input" rows="1" class="flex-1 p-3 rounded-lg resize-y" placeholder="Escribe un mensaje..." onkeypress="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendMsg();}"></textarea>
-            <button onclick="sendMsg()" class="text-[#008069] text-2xl px-3"><i class="fas fa-paper-plane"></i></button>
+            <button onclick="document.getElementById('modal-quick').classList.remove('hidden')" class="text-xl p-2 text-gray-600 hover:text-yellow-600">⚡</button>
+            <textarea id="msg-input" rows="1" class="flex-1 p-3 rounded-lg resize-y border border-gray-300 focus:outline-none focus:border-green-500" placeholder="Escribe un mensaje..." onkeypress="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendMsg();}"></textarea>
+            <button onclick="sendMsg()" class="text-[#008069] text-2xl px-3 hover:scale-110 transition"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
 
     <div id="modal-quick" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-        <div class="bg-white rounded p-6 w-[500px] max-h-[80vh] overflow-y-auto">
-            <div class="flex justify-between mb-4">
-                <h2 class="font-bold">⚡ Respuestas Rápidas</h2>
-                <button onclick="document.getElementById('modal-quick').classList.add('hidden')">✕</button>
+        <div class="bg-white rounded p-6 w-[600px] max-h-[80vh] overflow-y-auto shadow-lg">
+            <div class="flex justify-between mb-4 border-b pb-2">
+                <h2 class="font-bold text-gray-700">⚡ Respuestas Rápidas</h2>
+                <button onclick="document.getElementById('modal-quick').classList.add('hidden')" class="text-gray-500 hover:text-red-500 font-bold">✕</button>
             </div>
-            <div class="space-y-2" id="quick-list"></div>
+            <div class="grid grid-cols-1 gap-2" id="quick-list"></div>
         </div>
     </div>
 
     <div id="modal-tags" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-        <div class="bg-white rounded p-6 w-80">
-            <h2 class="font-bold mb-4">🏷️ Etiquetas</h2>
+        <div class="bg-white rounded p-6 w-80 shadow-lg">
+            <h2 class="font-bold mb-4 text-gray-700">🏷️ Gestión de Etiquetas</h2>
             <div class="space-y-2">
+                <button onclick="toggleTag('Atención')" class="w-full text-left p-2 border rounded hover:bg-red-50 text-red-700 font-semibold">🟥 Atención</button>
+                <button onclick="toggleTag('Tarde')" class="w-full text-left p-2 border rounded hover:bg-yellow-50 text-yellow-700 font-semibold">🟧 Tarde</button>
+                <button onclick="toggleTag('Pendiente')" class="w-full text-left p-2 border rounded hover:bg-yellow-100 text-yellow-800 font-semibold">🟨 Pendiente</button>
                 <button onclick="toggleTag('Solicita Factura')" class="w-full text-left p-2 border rounded hover:bg-blue-50 text-blue-700">🟦 Solicita Factura</button>
-                <button onclick="toggleTag('Solicita Recibo')" class="w-full text-left p-2 border rounded hover:bg-purple-50 text-purple-700">🟪 Solicita Recibo</button>
-                <button onclick="toggleTag('Urgente')" class="w-full text-left p-2 border rounded hover:bg-red-50 text-red-700">🟥 Urgente</button>
                 <button onclick="toggleTag('Cita Confirmada')" class="w-full text-left p-2 border rounded hover:bg-green-50 text-green-700">🟩 Cita Confirmada</button>
             </div>
-            <button onclick="document.getElementById('modal-tags').classList.add('hidden')" class="mt-4 w-full bg-gray-200 p-2 rounded">Cerrar</button>
+            <button onclick="document.getElementById('modal-tags').classList.add('hidden')" class="mt-4 w-full bg-gray-200 p-2 rounded hover:bg-gray-300">Cerrar</button>
         </div>
     </div>
 
@@ -93,26 +115,23 @@
         let currentPhone = null;
         let isBotActive = true; 
         let contactsCache = []; 
+        let allMessages = [];
 
         const QUICK_REPLIES = [
-            { title: "Condesa (11:00am Ana)", text: `Hola buenas tardes ✨\nMe comunico para confirmar su cita de mañana en Condesa a las 11:00am con la fisioterapeuta Ana Huacuja ☀️\nEn Centro Sacre manejamos una penalización si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda que tiene la fisioterapeuta ya que es casi imposible que otra paciente ocupe el espacio debido a la precipitación y por respeto al tiempo de la fisioterapeuta` },
-            { title: "Condesa (5:00pm)", text: `Hola buenos dias ✨\nMe comunico para confirmar su cita de mañana en Condesa a las 5:00pm ☀️\nEn Centro Sacre manejamos una penalización si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda que tiene la fisioterapeuta ya que es casi imposible que otra paciente ocupe el espacio debido a la precipitación y por respeto al tiempo de la fisioterapeuta.` },
-            { title: "Condesa (7:00pm Andrea)", text: `Hola buen dia ✨\nMe comunico para confirmar su cita de mañana en Condesa a las 07:00pm con la fisioterapeuta Andrea Quintero ☀️\nEn Centro Sacre manejamos una penalización si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda que tiene la fisioterapeuta ya que es casi imposible que otra paciente ocupe el espacio debido a la precipitación y por respeto al tiempo de la fisioterapeuta.` },
-            { title: "Condesa (8:00am Nalleli)", text: `Hola buenos dias ✨\nMe comunico para confirmar su cita de mañana en *Condesa* a las 08:00am con la fisioterapeuta *Nalleli Silva* ☀️\nEn Centro Sacre manejamos una *penalización* si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda que tiene la fisioterapeuta ya que es casi imposible que otra paciente ocupe el espacio debido a la precipitación y por respeto al tiempo de la fisioterapeuta.` },
-            { title: "Condesa (7:00am Andrea - 1ra Vez)", text: `Hola 👋\nMe comunico para confirmar su cita de mañana en Condesa a las 07:00am con la fisioterapeuta Andrea Quintero ☀️\n\nAquí algunos datos a tener en cuenta para tu consulta de primera vez 🪄\n\n💫Te pedimos llegar 15 min antes de tu consulta para firma de consentimiento informado 😊\n\n💫Te compartimos nuestra dirección en condesa ✌️\n💫 Baja California 354 hipódromo condesa\n💫 Contamos con un lugar de estacionamiento si está libre puedes utilizarlo con mucho gusto 🚗\n\n💫 Aquí el link con nuestra dirección 👇\n🔝 https://maps.app.goo.gl/VibfPG6iFyFtMv6D7\n💫 Manejamos una penalización si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda que tiene la fisioterapeuta.\n💫 Ven con ropa cómoda o puedes traer ropa de deporte en una maletita 😉\n\nGracias por confiar en Centro Sacre 🫶` },
-            { title: "Santa Fe (9:00am Grecia - 1ra Vez)", text: `Hola 👋\nMe comunico para confirmar su cita del día mañana en Santa Fe a las 9:00am con la fisioterapeuta Grecia Zapata ☀️\n\nAquí algunos datos a tener en cuenta para tu consulta de primera vez 🪄\n\n💫Te pedimos llegar 15 min antes de tu consulta para firma de consentimiento informado 😊\n\n💫Aquí nuestra dirección en Santa Fe ✌️\n💫 Vasco de Quiroga 4299, Ciudad de México, Distrito Federal 05370local 203 arriba del Oxxo en aserrin\n💫 Contamos con estacionamiento en la plaza 🚗\n\n💫 Aquí el link con nuestra dirección 👇\n🔝 Usa Waze para conducir a Centro sacre Mx - Centro Infinito , Vasco de Quiroga, 4299, Ciudad de México: https://waze.com/ul/h9g3qheze0\n\n💫 Manejamos una penalización si las cancelaciones no se realizan con 24 de antelación 🙏.\n\nGracias por confiar en Centro Sacre 🫶` },
-            { title: "Reagendar (Link)", text: `Te compartimos el link para que te reagendes directamente:\nhttps://centrosacre.com/solicitudCitas?cc=yuwE3pdEW3` }
+             { title: "Condesa (11:00am Ana)", text: `Hola buenas tardes ✨\nMe comunico para confirmar su cita de mañana en Condesa a las 11:00am con la fisioterapeuta Ana Huacuja ☀️\nEn Centro Sacre manejamos una penalización si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda que tiene la fisioterapeuta ya que es casi imposible que otra paciente ocupe el espacio debido a la precipitación y por respeto al tiempo de la fisioterapeuta` },
+             { title: "Condesa (5:00pm)", text: `Hola buenos dias ✨\nMe comunico para confirmar su cita de mañana en Condesa a las 5:00pm ☀️\nEn Centro Sacre manejamos una penalización si las cancelaciones no se hacen con 24 hrs de anticipación debido a la alta demanda que tiene la fisioterapeuta ya que es casi imposible que otra paciente ocupe el espacio debido a la precipitación y por respeto al tiempo de la fisioterapeuta.` },
+             { title: "Reagendar (Link)", text: `Te compartimos el link para que te reagendes directamente:\nhttps://centrosacre.com/solicitudCitas?cc=yuwE3pdEW3` }
         ];
-        
+
         function init() {
             const list = document.getElementById('quick-list');
             QUICK_REPLIES.forEach(q => {
-                list.innerHTML += `<div onclick="selectQuickReply(this.getAttribute('data-text'))" data-text="${encodeURIComponent(q.text)}" class="p-3 border rounded cursor-pointer hover:bg-green-50">
-                    <div class="font-bold">${q.title}</div>
-                    <div class="text-xs text-gray-500 truncate">${q.text.substring(0,60)}...</div>
-                </div>`;
+                list.innerHTML += `<div onclick="selectQuickReply(this.getAttribute('data-text'))" data-text="${encodeURIComponent(q.text)}" class="p-3 border rounded cursor-pointer hover:bg-green-50 transition">
+                                     <div class="font-bold text-gray-800">${q.title}</div>
+                                     <div class="text-xs text-gray-500 truncate">${q.text.substring(0,80)}...</div>
+                                   </div>`;
             });
-            setInterval(() => { loadContacts(); if(currentPhone) loadMessages(); }, 2000);
+            setInterval(() => { loadContacts(); if(currentPhone) loadMessages(); }, 3000); 
             loadContacts();
         }
 
@@ -123,148 +142,188 @@
 
         async function loadContacts() {
             try {
+                const query = document.getElementById('search-contacts').value.toLowerCase();
                 const res = await fetch('/api/contacts');
-                contactsCache = await res.json(); 
+                const data = await res.json();
+                contactsCache = data;
+
+                const filtered = data.filter(c => (c.name && c.name.toLowerCase().includes(query)) || c.phone.includes(query));
+
                 const list = document.getElementById('contacts-list');
-                
-                list.innerHTML = contactsCache.map(c => {
+                list.innerHTML = filtered.map(c => {
                     let tagsHtml = c.tags.map(t => {
                         let color = 'tag-blue';
-                        if(t==='Urgente') color = 'tag-red';
-                        if(t==='Solicita Recibo') color = 'tag-purple';
+                        if(t==='Atención') color = 'tag-red';
+                        if(t==='Tarde') color = 'tag-orange';
+                        if(t==='Pendiente') color = 'tag-yellow';
                         if(t==='Cita Confirmada') color = 'tag-green';
                         return `<span class="badge-tag ${color}">${t}</span>`;
                     }).join('');
                     
-                    return `
-                    <div onclick="openChat('${c.phone}')" class="p-3 border-b cursor-pointer ${currentPhone === c.phone ? 'active-chat' : ''}">
-                        <div class="font-bold flex items-center gap-1">
-                            ${c.isChatPinned ? '📌' : ''} ${c.name || c.phone} 
-                            ${c.unreadCount > 0 ? `<span class="bg-green-500 text-white text-[10px] rounded px-1">${c.unreadCount}</span>` : ''}
-                        </div>
-                        <div class="text-xs text-gray-500 truncate flex items-center gap-1">${tagsHtml} ${c.lastMessage}</div>
-                    </div>`
+                    return `<div onclick="openChat('${c.phone}')" class="p-3 border-b cursor-pointer hover:bg-gray-100 transition ${currentPhone === c.phone ? 'active-chat' : ''}">
+                                <div class="font-bold flex items-center justify-between text-gray-800">
+                                    <span class="truncate">${c.isChatPinned ? '📌' : ''} ${c.name || c.phone}</span>
+                                    ${c.unreadCount > 0 ? `<span class="bg-green-500 text-white text-[10px] rounded-full px-2 py-0.5">${c.unreadCount}</span>` : ''}
+                                </div>
+                                <div class="text-xs text-gray-500 truncate flex items-center gap-1 mt-1">
+                                    ${tagsHtml} 
+                                    <span class="text-gray-400 ml-auto">${new Date(c.timestamp).toLocaleDateString()}</span>
+                                </div>
+                                <div class="text-xs text-gray-400 truncate">${c.lastMessage}</div>
+                            </div>`
                 }).join('');
             } catch(e) { console.error(e); }
         }
 
-        function newChat() {
-            const num = prompt("Ingresa el número del cliente (con código de país):");
-            if(num) openChat(num.replace(/\D/g,''));
-        }
+        function filterContacts() { loadContacts(); }
 
         async function openChat(phone) {
             currentPhone = phone;
             document.getElementById('empty-state').style.display = 'none';
-            const phoneLink = `<a href="tel:+${phone}" title="Llamar" class="ml-2 text-green-600 hover:text-green-800 text-lg"><i class="fas fa-phone-alt"></i></a>`;
-            document.getElementById('chat-title').innerHTML = phone + phoneLink;
+            const contact = contactsCache.find(c => c.phone === phone);
+            if(contact && contact.sessionExpired) document.getElementById('warning-24h').classList.remove('hidden');
+            else document.getElementById('warning-24h').classList.add('hidden');
+
+            const phoneLink = `<a href="https://wa.me/${phone}" target="_blank" title="Abrir en WhatsApp Web" class="ml-2 text-green-600 hover:text-green-800 text-lg"><i class="fab fa-whatsapp"></i></a>`;
+            document.getElementById('chat-title').innerHTML = (contact?.name || phone) + phoneLink;
             await loadMessages();
+        }
+
+        function formatMessageBody(text) {
+            if(!text) return '';
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            return text.replace(urlRegex, function(url) {
+                return `<a href="${url}" target="_blank" class="link-style">${url}</a>`;
+            });
         }
 
         async function loadMessages() {
             if(!currentPhone) return;
             const res = await fetch(`/api/chat?phone=${currentPhone}`);
             const data = await res.json();
-            const msgs = data.messages || []; 
+            allMessages = data.messages || [];
             updateBotButton(data.isHuman);
             
             const me = contactsCache.find(c => c.phone === currentPhone);
             const headerTags = document.getElementById('header-tags');
-            
-            // Actualizar botón de PIN CHAT
-            const pinBtn = document.getElementById('btn-pin-chat');
-            if (me && me.isChatPinned) {
-                pinBtn.classList.replace('text-gray-400', 'text-green-600');
-            } else {
-                pinBtn.classList.replace('text-green-600', 'text-gray-400');
-            }
-
             if(me && me.tags) {
                 headerTags.innerHTML = me.tags.map(t => {
                      let color = 'tag-blue';
-                     if(t==='Urgente') color = 'tag-red';
-                     if(t==='Solicita Recibo') color = 'tag-purple';
+                     if(t==='Atención') color = 'tag-red';
+                     if(t==='Tarde') color = 'tag-orange';
+                     if(t==='Pendiente') color = 'tag-yellow';
                      if(t==='Cita Confirmada') color = 'tag-green';
                      return `<span class="badge-tag ${color}">${t}</span>`;
                 }).join('');
             }
+            renderMessages(allMessages);
+        }
 
+        function renderMessages(msgs) {
             const box = document.getElementById('chat-history');
+            const searchQuery = document.getElementById('search-in-chat').value.toLowerCase();
+
             box.innerHTML = msgs.map(m => {
+                const bodyLower = m.body ? m.body.toLowerCase() : '';
+                const highlightClass = (searchQuery && bodyLower.includes(searchQuery)) ? 'bg-yellow-100 ring-2 ring-yellow-400' : '';
                 const cls = m.role === 'admin' ? 'msg-admin' : (m.role === 'bot' ? 'msg-bot' : 'msg-cliente');
-                
-                let content = `<div class="whitespace-pre-wrap text-sm">${m.body}</div>`;
+                let content = `<div class="whitespace-pre-wrap text-sm ${highlightClass}">${formatMessageBody(m.body)}</div>`;
                 
                 if(m.type === 'image') {
-                    const src = m.mediaUrl || 'https://via.placeholder.com/150?text=Foto';
-                    content = `<img src="${src}" class="msg-img" onclick="window.open('${src}')"><div class="text-xs">${m.body.replace(/_event_.*/, '')}</div>`;
+                    const src = m.mediaUrl || '#';
+                    content = `<img src="${src}" class="msg-img" onclick="window.open('${src}')"><div class="text-xs text-gray-500">📷 Imagen</div>`;
+                }
+                if(m.type === 'audio') {
+                    content = `<audio controls src="${m.mediaUrl}" class="w-64 mt-1"></audio><div class="text-xs text-gray-500">🎵 Audio</div>`;
                 }
                 if(m.type === 'file') {
-                    const src = m.mediaUrl || '#';
-                    content = `<div class="bg-gray-100 p-2 rounded flex items-center gap-2 cursor-pointer" onclick="window.open('${src}')"><i class="fas fa-file-pdf text-red-500 text-xl"></i> <span class="text-blue-600 underline text-sm">Ver Archivo</span></div>`;
+                    content = `<a href="${m.mediaUrl}" target="_blank" class="bg-gray-100 p-2 rounded flex items-center gap-2 cursor-pointer hover:bg-gray-200"><i class="fas fa-file-alt text-red-500"></i> <span class="text-blue-600 underline text-sm">Descargar Archivo</span></a>`;
                 }
                 if(m.type === 'system') return ''; 
-                
+
                 const starIcon = m.isStarred ? '<i class="fas fa-star text-yellow-500 text-xs"></i>' : '';
                 const pinClass = m.isPinned ? 'border-l-4 border-yellow-400' : '';
-                
-                // Color iconos según estado
-                const starColor = m.isStarred ? 'text-yellow-500' : 'text-gray-300';
-                const pinColor = m.isPinned ? 'text-green-600' : 'text-gray-300';
+
+                // AQUI AGREGAMOS EL ID AL ONCLICK
+                const msgId = m.id || '';
 
                 return `<div class="msg-bubble ${cls} ${pinClass} group">
                             ${content}
-                            <div class="text-[10px] text-gray-400 text-right flex justify-end gap-1 mt-1">
+                            <div class="text-[10px] text-gray-400 text-right flex justify-end gap-1 mt-1 items-center">
                                 ${starIcon} ${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
                             </div>
                             <div class="msg-actions">
-                                <button onclick="msgAction(${m.timestamp}, 'star', ${m.isStarred})" title="Destacar"><i class="fas fa-star ${starColor}"></i></button>
-                                <button onclick="msgAction(${m.timestamp}, 'pin', ${m.isPinned})" title="Fijar"><i class="fas fa-thumbtack ${pinColor}"></i></button>
+                                <button onclick="copyToClipboard('${m.body ? m.body.replace(/'/g, "\\'") : ''}')" title="Copiar Texto" class="hover:bg-gray-200 p-1 rounded text-gray-600"><i class="fas fa-copy"></i></button>
+                                <button onclick="msgAction(${m.timestamp}, 'star', ${m.isStarred})" title="Destacar" class="hover:bg-gray-200 p-1 rounded"><i class="fas fa-star ${m.isStarred ? 'text-yellow-500' : 'text-gray-300'}"></i></button>
+                                <button onclick="msgAction(${m.timestamp}, 'pin', ${m.isPinned})" title="Fijar" class="hover:bg-gray-200 p-1 rounded"><i class="fas fa-thumbtack ${m.isPinned ? 'text-green-600' : 'text-gray-300'}"></i></button>
+                                <span class="text-gray-300">|</span>
+                                <button onclick="sendReaction('${msgId}', '👍')" title="Reaccionar 👍" class="hover:scale-125 transition">👍</button>
+                                <button onclick="sendReaction('${msgId}', '❤️')" title="Reaccionar ❤️" class="hover:scale-125 transition">❤️</button>
+                                <button onclick="sendReaction('${msgId}', '✅')" title="Reaccionar ✅" class="hover:scale-125 transition">✅</button>
                             </div>
                         </div>`
             }).join('');
         }
 
+        function searchInChat() { renderMessages(allMessages); }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const input = document.getElementById('msg-input');
+                const prevPlace = input.placeholder;
+                input.placeholder = "¡Texto copiado!";
+                setTimeout(() => input.placeholder = prevPlace, 1000);
+            });
+        }
+
         async function msgAction(timestamp, type, isCurrentlyActive) {
-            // Si está activo, lo quitamos. Si no, lo agregamos.
             const action = isCurrentlyActive ? 'remove' : 'add';
             await fetch('/api/message-action', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, timestamp, type, action }) }); 
             loadMessages();
         }
 
+        // NUEVA FUNCIÓN DE REACCIÓN
+        async function sendReaction(messageId, emoji) {
+            if(!messageId) {
+                alert("Este mensaje es antiguo y no tiene ID guardado para reaccionar.");
+                return;
+            }
+            await fetch('/api/react', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ phone: currentPhone, messageId, emoji }) 
+            }); 
+            // Feedback visual: Recargar no muestra la reacción en el chat local inmediatamente a menos que guardemos el evento de reacción, 
+            // pero en WhatsApp del cliente ya apareció.
+        }
+
         async function toggleTag(tagName) {
             const contact = contactsCache.find(c => c.phone === currentPhone);
             const hasTag = contact && contact.tags && contact.tags.includes(tagName);
-            // Si tiene el tag, removemos. Si no, agregamos.
             const action = hasTag ? 'remove' : 'add';
-
             await fetch('/api/tags', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, tag: tagName, action }) }); 
             loadContacts(); 
-            setTimeout(() => openChat(currentPhone), 100); 
+            setTimeout(() => openChat(currentPhone), 100);
         }
 
         async function togglePinChat() {
             const contact = contactsCache.find(c => c.phone === currentPhone);
-            const currentStatus = contact ? contact.isChatPinned : false;
-            // Si está pineado, despineamos.
-            const action = currentStatus ? 'unpin' : 'pin';
-
+            const action = contact && contact.isChatPinned ? 'unpin' : 'pin';
             await fetch('/api/pin-chat', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, action }) });
             loadContacts();
-            setTimeout(() => openChat(currentPhone), 100); 
+            setTimeout(() => openChat(currentPhone), 100);
         }
 
         async function toggleBot() {
-            const desiredActiveState = !isBotActive;
-            await fetch('/api/toggle-bot', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, active: desiredActiveState }) });
+            await fetch('/api/toggle-bot', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, active: !isBotActive }) });
             loadMessages();
         }
 
         function updateBotButton(isHumanMode) {
             const btn = document.getElementById('btn-toggle');
             btn.style.display = 'block';
-            if (isHumanMode) { isBotActive = false; btn.innerText = '🔴 BOT OFF'; btn.className = 'px-3 py-1 rounded text-xs font-bold shadow bg-red-100 text-red-600 border border-red-200 uppercase'; } 
-            else { isBotActive = true; btn.innerText = '🟢 BOT ON'; btn.className = 'px-3 py-1 rounded text-xs font-bold shadow bg-green-100 text-green-600 border border-green-200 uppercase'; }
+            if (isHumanMode) { isBotActive = false; btn.innerText = '🔴 BOT OFF'; btn.className = 'px-3 py-1 rounded text-xs font-bold shadow bg-red-100 text-red-600 border border-red-200 uppercase cursor-pointer'; } 
+            else { isBotActive = true; btn.innerText = '🟢 BOT ON'; btn.className = 'px-3 py-1 rounded text-xs font-bold shadow bg-green-100 text-green-600 border border-green-200 uppercase cursor-pointer'; }
         }
 
         async function sendMsg() {
@@ -272,17 +331,30 @@
             const txt = input.value;
             if(!txt || !currentPhone) return;
             input.value = '';
-            await fetch('/api/send', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, message: txt }) });
+            
+            const warning = document.getElementById('warning-24h');
+            if(!warning.classList.contains('hidden')) {
+                alert("⚠️ ¡CUIDADO! La ventana de 24 horas está cerrada. Es probable que este mensaje no llegue al cliente.");
+            }
+
+            const res = await fetch('/api/send', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, message: txt }) });
+            const data = await res.json();
+            if(data.status === 'error') {
+                alert('Error al enviar: ' + data.error);
+            }
             loadMessages();
         }
-        
+
         async function editName() {
-            const newName = prompt("Nombre:");
+            const newName = prompt("Editar nombre del contacto:", document.getElementById('chat-title').innerText.replace('...', '').trim());
             if(newName) { await fetch('/api/save-name', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, name: newName }) }); loadContacts(); }
         }
 
-        function downloadBackup() { window.location.href = '/api/backup'; }
-        
+        function newChat() {
+            const num = prompt("Ingresa el número (con código de país, ej: 521...):");
+            if(num) openChat(num.replace(/\D/g,''));
+        }
+
         init();
     </script>
 </body>
