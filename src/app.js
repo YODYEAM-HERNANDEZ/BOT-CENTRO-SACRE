@@ -462,7 +462,7 @@ const main = async () => {
                 type: "template",
                 template: {
                     name: templateName,
-                    language: { code: "es" }, // En la imagen dice "Spanish" (es), no "Spanish (MEX)"
+                    language: { code: "MEX" }, // En la imagen dice "Spanish" (es), no "Spanish (MEX)"
                     components: [
                         {
                             type: "body",
