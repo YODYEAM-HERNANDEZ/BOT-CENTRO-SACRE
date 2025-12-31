@@ -27,15 +27,16 @@ const agregarEtiqueta = (phone, tag) => {
     }
 }
 
-// REGISTRO DE MENSAJES (BLINDADO CONTRA ERROR body.includes)
+// REGISTRO DE MENSAJES (BLINDADO)
 const registrarMensaje = (telefono, role, body, mediaUrl = null, id = null) => {
     initMetadata(telefono)
     if (!baseDatosChats[telefono]) baseDatosChats[telefono] = []
     const timestamp = Date.now()
     
-    // --- CORRECCIÓN CRÍTICA: BLINDAJE CONTRA EL ERROR ---
-    if (typeof body !== 'string') {
-        body = '';
+    // BLINDAJE
+    let safeBody = '';
+    if (typeof body === 'string') {
+        safeBody = body;
     }
 
     let type = 'text';
@@ -44,16 +45,16 @@ const registrarMensaje = (telefono, role, body, mediaUrl = null, id = null) => {
         if (mediaUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i)) type = 'image';
         else if (mediaUrl.match(/\.(mp3|ogg|wav)$/i)) type = 'audio';
         else type = 'file';
-    } else if (body.includes('_event_')) { 
-         if (body.includes('http')) {
-             mediaUrl = body; 
+    } else if (safeBody.includes('_event_')) {
+         if (safeBody.includes('http')) {
+             mediaUrl = safeBody; 
              type = 'file';
          } else {
              type = 'system'; 
          }
     }
 
-    baseDatosChats[telefono].push({ role, body, timestamp, type, mediaUrl, id })
+    baseDatosChats[telefono].push({ role, body: safeBody, timestamp, type, mediaUrl, id })
     
     if (role === 'cliente') chatMetadata[telefono].unread += 1
     if (baseDatosChats[telefono].length > 300) baseDatosChats[telefono].shift()
@@ -308,13 +309,20 @@ const flowPrincipal = addKeyword([EVENTS.WELCOME, 'hola', 'buenas', 'buenos dias
         return fallBack('⚠️ Por favor selecciona Si o No.' + LEYENDA_STRICT);
     })
 
+// --- FLOW PARA MANEJAR RESPUESTA A PLANTILLA ---
+// Si el cliente presiona el botón "¡Hola!" de la plantilla, cae aquí y se va al flujo principal
+const flowRespuestaPlantilla = addKeyword(['¡Hola!', 'Hola'])
+    .addAction(async (_, { gotoFlow }) => {
+        return gotoFlow(flowPrincipal);
+    })
+
 const main = async () => {
     const adapterDB = new MemoryDB()
     const adapterFlow = createFlow([
         flowPrincipal, flowFormulario, flowMenu, flowServicios, flowDescripcionServicios, 
         flowPostServicio, flowSucursales, flowAgendar, flowPrecios, flowHorarios, 
         flowCancelar, flowTarde, flowFactura, flowNosotros, flowAsesor, flowContinuar, 
-        flowDespedida, flowHumano 
+        flowDespedida, flowHumano, flowRespuestaPlantilla 
     ])
     
     const adapterProvider = createProvider(MetaProvider, {
@@ -326,7 +334,7 @@ const main = async () => {
 
     const originalSendText = adapterProvider.sendText.bind(adapterProvider)
     
-    // OVERRIDE SENDTEXT (Captura ID)
+    // OVERRIDE SENDTEXT
     adapterProvider.sendText = async (number, message, options) => {
         const response = await originalSendText(number, message, options)
         const messageId = response?.messages?.[0]?.id || response?.id || null;
@@ -342,10 +350,8 @@ const main = async () => {
             const msgs = baseDatosChats[telefono]
             const ultimo = msgs[msgs.length - 1]
             initMetadata(telefono)
-            
             const diff = Date.now() - (ultimo ? ultimo.timestamp : 0);
             const expired = diff > (24 * 60 * 60 * 1000);
-
             return {
                 phone: telefono,
                 name: nombresGuardados[telefono] || '',
@@ -408,7 +414,6 @@ const main = async () => {
         res.end(JSON.stringify({ status: 'ok' }))
     })
 
-    // --- REACCIONES ---
     adapterProvider.server.post('/api/react', async (req, res) => {
         const body = req.body || {}
         const { phone, messageId, emoji } = body
@@ -440,43 +445,39 @@ const main = async () => {
         res.end(JSON.stringify({ status: 'ok', tags: chatMetadata[phone].tags }))
     })
 
-    // --- ENDPOINT PARA ENVIAR PLANTILLA (CORREGIDO CON NOMBRE REAL) ---
+    // --- ENDPOINT PARA ENVIAR PLANTILLA CON IMAGEN ---
     adapterProvider.server.post('/api/send-template', async (req, res) => {
         const body = req.body || {}
         try {
-            // Se usa el nombre real de la plantilla aprobada que vi en tu captura
-            const templateName = "saludo_sacre"; 
-            
-            // Verificamos si necesitamos pasar parámetros (variables)
-            // En tu imagen se ve que la plantilla pide {{1}} y {{2}} (Hola Juan, Gracias por reservar con Sacre)
-            // Aquí puedes personalizar los valores por defecto
-            const parameters = [
-                { type: "text", text: "Cliente" }, // Variable {{1}}
-                { type: "text", text: "Centro Sacre" } // Variable {{2}}
-            ];
-
             const payload = {
                 messaging_product: "whatsapp",
                 recipient_type: "individual",
                 to: body.phone,
                 type: "template",
                 template: {
-                    name: templateName,
-                    language: { code: "MEX" }, // En la imagen dice "Spanish" (es), no "Spanish (MEX)"
+                    name: "saludo_sacre", // Nombre exacto
+                    language: { code: "es_MX" },
                     components: [
                         {
-                            type: "body",
-                            parameters: parameters
+                            type: "header",
+                            parameters: [
+                                {
+                                    type: "image",
+                                    image: {
+                                        // LINK PÚBLICO DE TU IMAGEN SACRE
+                                        link: "https://i.imgur.com/3YQ5X0r.jpeg" 
+                                        // (Subí tu imagen a Imgur para que tenga link público. Si prefieres otro, cámbialo aquí)
+                                    }
+                                }
+                            ]
                         }
                     ]
                 }
             };
             
             const response = await adapterProvider.sendMessage(body.phone, payload, {});
-            
             const messageId = response?.messages?.[0]?.id || response?.id || null;
             registrarMensaje(body.phone, 'admin', "📢 [Plantilla Enviada]", null, messageId);
-            
             res.end(JSON.stringify({ status: 'ok' }));
         } catch (e) {
             console.error(e)
@@ -532,8 +533,6 @@ const main = async () => {
         if (!mediaUrl && payload.file) mediaUrl = payload.file;
 
         const messageId = payload.id || payload.key?.id || payload.messageId || payload.wamid || null;
-        
-        // CORRECCIÓN CRÍTICA DE BODY
         const bodyText = (payload.body && typeof payload.body === 'string') ? payload.body : '';
 
         registrarMensaje(payload.from, 'cliente', bodyText, mediaUrl, messageId)
