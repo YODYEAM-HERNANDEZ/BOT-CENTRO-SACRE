@@ -27,19 +27,26 @@ const agregarEtiqueta = (phone, tag) => {
     }
 }
 
-// REGISTRO DE MENSAJES
+// REGISTRO DE MENSAJES (BLINDADO CONTRA ERROR body.includes)
 const registrarMensaje = (telefono, role, body, mediaUrl = null, id = null) => {
     initMetadata(telefono)
     if (!baseDatosChats[telefono]) baseDatosChats[telefono] = []
     const timestamp = Date.now()
     
+    // --- CORRECCIÓN CRÍTICA: BLINDAJE CONTRA EL ERROR ---
+    // Si 'body' no es un texto (es null, undefined o un objeto), lo forzamos a ser un string vacío.
+    // Esto evita que 'body.includes' falle y rompa el bot.
+    if (typeof body !== 'string') {
+        body = '';
+    }
+
     let type = 'text';
 
     if (mediaUrl) {
         if (mediaUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i)) type = 'image';
         else if (mediaUrl.match(/\.(mp3|ogg|wav)$/i)) type = 'audio';
         else type = 'file';
-    } else if (body && body.includes('_event_')) {
+    } else if (body.includes('_event_')) { // Ahora es seguro usar .includes
          if (body.includes('http')) {
              mediaUrl = body; 
              type = 'file';
@@ -235,7 +242,7 @@ const flowServicios = addKeyword(['servicios', 'tratamientos'])
         '*(Escribe el número del servicio para más detalles)*'
     ].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowDescripcionServicios))
 
-// --- MENÚ PRINCIPAL ---
+// --- MENÚ PRINCIPAL (Sin saludos para evitar bucles) ---
 const flowMenu = addKeyword(['Menu', 'menu', 'menú'])
     .addAnswer([
         'Por favor, elige la opción que deseas para poder apoyarte:',
@@ -287,8 +294,8 @@ const flowFormulario = addKeyword(['formulario_registro'])
         'Un gusto que formes parte de la familia Centro Sacre ❣️'
     ].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowMenu))
 
-// --- FLOW PRINCIPAL CON SALUDOS INCLUIDOS ---
-const flowPrincipal = addKeyword([EVENTS.WELCOME, 'hola', 'buenas', 'buenos dias', 'buenas tardes', 'inicio'])
+// --- FLOW PRINCIPAL CON SALUDOS OBLIGATORIOS ---
+const flowPrincipal = addKeyword([EVENTS.WELCOME, 'hola', 'buenas', 'buenos dias', 'buenas tardes', 'inicio', 'comenzar'])
     .addAction(async (ctx, { gotoFlow, endFlow }) => {
         if (usuariosEnModoHumano.has(ctx.from)) return gotoFlow(flowHumano);
     })
@@ -337,6 +344,7 @@ const main = async () => {
             const msgs = baseDatosChats[telefono]
             const ultimo = msgs[msgs.length - 1]
             initMetadata(telefono)
+            
             const diff = Date.now() - (ultimo ? ultimo.timestamp : 0);
             const expired = diff > (24 * 60 * 60 * 1000);
 
@@ -402,6 +410,7 @@ const main = async () => {
         res.end(JSON.stringify({ status: 'ok' }))
     })
 
+    // --- ENDPOINT REACCIONES ---
     adapterProvider.server.post('/api/react', async (req, res) => {
         const body = req.body || {}
         const { phone, messageId, emoji } = body
@@ -433,7 +442,7 @@ const main = async () => {
         res.end(JSON.stringify({ status: 'ok', tags: chatMetadata[phone].tags }))
     })
 
-    // --- NUEVO ENDPOINT PARA ENVIAR PLANTILLA (SALUDO_SACRE) ---
+    // --- ENDPOINT PARA ENVIAR PLANTILLA (SALUDO_SACRE) ---
     adapterProvider.server.post('/api/send-template', async (req, res) => {
         const body = req.body || {}
         try {
@@ -443,13 +452,14 @@ const main = async () => {
                 to: body.phone,
                 type: "template",
                 template: {
-                    name: "saludo_sacre", // Nombre exacto de tu plantilla
+                    name: "saludo_sacre", // Nombre exacto de tu plantilla en Meta
                     language: { code: "es_MX" }
                 }
             };
             
             const response = await adapterProvider.sendMessage(body.phone, payload, {});
             
+            // Log para el CRM
             const messageId = response?.messages?.[0]?.id || response?.id || null;
             registrarMensaje(body.phone, 'admin', "📢 [Plantilla Iniciada]", null, messageId);
             
@@ -476,46 +486,22 @@ const main = async () => {
     adapterProvider.server.get('/api/backup', (req, res) => {
         const allChats = baseDatosChats;
         const names = nombresGuardados;
-        let htmlContent = `
-        <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Respaldo de Chats - Centro Sacre</title>
-        <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #d1d7db; margin: 0; padding: 20px; }
-            h1 { text-align: center; color: #444; margin-bottom: 30px; }
-            .chat-container { background: #efeae2; max-width: 800px; margin: 0 auto 30px auto; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #ccc; }
-            .chat-header { background: #008069; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #005c4b; }
-            .chat-header h2 { margin: 0; font-size: 18px; }
-            .chat-header span { font-size: 14px; opacity: 0.9; }
-            .messages-area { padding: 20px; display: flex; flex-direction: column; gap: 8px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); opacity: 0.95; }
-            .msg { padding: 8px 12px; border-radius: 8px; max-width: 80%; position: relative; word-wrap: break-word; font-size: 14px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); line-height: 1.4; }
-            .msg-client { background: white; align-self: flex-start; border-top-left-radius: 0; color: #111b21; }
-            .msg-admin { background: #d9fdd3; align-self: flex-end; border-top-right-radius: 0; color: #111b21; }
-            .msg-bot { background: #f0f2f5; align-self: flex-end; font-style: italic; border: 1px dashed #ccc; font-size: 13px; color: #555; }
-            .timestamp { font-size: 10px; color: #667781; text-align: right; margin-top: 4px; display: block; }
-            img.chat-img { max-width: 250px; border-radius: 6px; margin-bottom: 5px; display: block; border: 1px solid #ddd; }
-            audio { width: 100%; max-width: 250px; margin-top: 5px; }
-        </style></head><body><h1>📁 Respaldo de Conversaciones - Centro Sacre</h1>`;
-
+        let htmlContent = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Respaldo de Chats</title></head><body>`;
         Object.keys(allChats).forEach(phone => {
             const name = names[phone] || 'Desconocido';
             const messages = allChats[phone];
             if(messages && messages.length > 0) {
-                htmlContent += `<div class="chat-container"><div class="chat-header"><h2>👤 ${name}</h2><span>📞 ${phone}</span></div><div class="messages-area">`;
+                htmlContent += `<h3>👤 ${name} (${phone})</h3>`;
                 messages.forEach(msg => {
-                    let cls = 'msg-client';
-                    if(msg.role === 'admin') cls = 'msg-admin';
-                    if(msg.role === 'bot') cls = 'msg-bot';
                     let content = msg.body || '';
-                    if(msg.type === 'image') content = `<img src="${msg.mediaUrl}" class="chat-img"><a href="${msg.mediaUrl}" target="_blank" style="color: #027eb5;">📷 Ver Imagen</a>`;
-                    else if(msg.type === 'file') content = `📄 <strong>Archivo adjunto:</strong><br><a href="${msg.mediaUrl}" target="_blank" style="color: #027eb5;">⬇️ Descargar</a>`;
-                    else if(msg.type === 'audio') content = `🎵 <strong>Nota de voz:</strong><br><audio controls src="${msg.mediaUrl}"></audio>`;
-                    const time = new Date(msg.timestamp).toLocaleString('es-MX');
-                    htmlContent += `<div class="msg ${cls}">${content}<span class="timestamp">${time}</span></div>`;
+                    if(msg.type === 'image') content = `[IMAGEN] ${msg.mediaUrl}`;
+                    htmlContent += `<p><strong>${msg.role}:</strong> ${content}</p>`;
                 });
-                htmlContent += `</div></div>`;
+                htmlContent += `<hr>`;
             }
         });
         htmlContent += `</body></html>`;
-        res.writeHead(200, { 'Content-Type': 'text/html', 'Content-Disposition': 'attachment; filename="Respaldo_Sacre_CRM.html"' });
+        res.writeHead(200, { 'Content-Type': 'text/html', 'Content-Disposition': 'attachment; filename="Respaldo.html"' });
         res.end(htmlContent);
     })
 
@@ -531,10 +517,15 @@ const main = async () => {
         else if (payload?.message?.documentMessage?.url) mediaUrl = payload.message.documentMessage.url;
         if (!mediaUrl && payload.file) mediaUrl = payload.file;
 
+        // --- CAPTURA DE ID ---
         const messageId = payload.id || payload.key?.id || payload.messageId || payload.wamid || null;
-        registrarMensaje(payload.from, 'cliente', payload.body, mediaUrl, messageId)
         
-        if (payload.body.toLowerCase().includes('asesor')) { 
+        // --- BLINDAJE DE BODY ---
+        const bodyText = (payload.body && typeof payload.body === 'string') ? payload.body : '';
+
+        registrarMensaje(payload.from, 'cliente', bodyText, mediaUrl, messageId)
+        
+        if (bodyText.toLowerCase().includes('asesor')) { 
            usuariosEnModoHumano.add(payload.from);
            agregarEtiqueta(payload.from, 'Atención');
         }
