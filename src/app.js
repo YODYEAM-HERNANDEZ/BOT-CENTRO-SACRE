@@ -229,13 +229,13 @@ const flowServicios = addKeyword(['servicios', 'tratamientos'])
         '7️⃣ 🤱 Rehabilitación Post embarazo',
         '8️⃣ 🌿 Mastitis',
         '9️⃣ 🚑 Rehabilitación oncológica',
-        '1️⃣0️⃣ 🦵 Drenaje linfático',
-        '1️⃣1️⃣ 🙋🏻‍♂️ Rehabilitación suelo pélvico masculino',
+        '10️⃣ 🦵 Drenaje linfático',
+        '11️⃣ 🙋🏻‍♂️ Rehabilitación suelo pélvico masculino',
         '',
         '*(Escribe el número del servicio para más detalles)*'
     ].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowDescripcionServicios))
 
-// --- MENÚ PRINCIPAL (SIN SALUDOS AQUÍ, PARA QUE VAYAN A BIENVENIDA) ---
+// --- MENÚ PRINCIPAL ---
 const flowMenu = addKeyword(['Menu', 'menu', 'menú'])
     .addAnswer([
         'Por favor, elige la opción que deseas para poder apoyarte:',
@@ -248,7 +248,7 @@ const flowMenu = addKeyword(['Menu', 'menu', 'menú'])
         '7️⃣ Solicitar factura 🧾',
         '8️⃣ ¿Quiénes somos? 💫',
         '9️⃣ Hablar con un asesor 👩‍💻',
-        '1️⃣0️⃣ Vas tarde 🏃‍♀️'
+        '10️⃣ Vas tarde 🏃‍♀️'
     ].join('\n'), { capture: true }, async (ctx, { gotoFlow, fallBack }) => {
         const op = ctx.body.trim();
 
@@ -321,6 +321,7 @@ const main = async () => {
 
     const originalSendText = adapterProvider.sendText.bind(adapterProvider)
     
+    // OVERRIDE SENDTEXT (Captura ID)
     adapterProvider.sendText = async (number, message, options) => {
         const response = await originalSendText(number, message, options)
         const messageId = response?.messages?.[0]?.id || response?.id || null;
@@ -336,7 +337,6 @@ const main = async () => {
             const msgs = baseDatosChats[telefono]
             const ultimo = msgs[msgs.length - 1]
             initMetadata(telefono)
-            
             const diff = Date.now() - (ultimo ? ultimo.timestamp : 0);
             const expired = diff > (24 * 60 * 60 * 1000);
 
@@ -431,6 +431,33 @@ const main = async () => {
         if (action === 'add' && !chatMetadata[phone].tags.includes(tag)) chatMetadata[phone].tags.push(tag)
         else if (action === 'remove') chatMetadata[phone].tags = chatMetadata[phone].tags.filter(t => t !== tag)
         res.end(JSON.stringify({ status: 'ok', tags: chatMetadata[phone].tags }))
+    })
+
+    // --- NUEVO ENDPOINT PARA ENVIAR PLANTILLA (SALUDO_SACRE) ---
+    adapterProvider.server.post('/api/send-template', async (req, res) => {
+        const body = req.body || {}
+        try {
+            const payload = {
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to: body.phone,
+                type: "template",
+                template: {
+                    name: "saludo_sacre", // Nombre exacto de tu plantilla
+                    language: { code: "es_MX" }
+                }
+            };
+            
+            const response = await adapterProvider.sendMessage(body.phone, payload, {});
+            
+            const messageId = response?.messages?.[0]?.id || response?.id || null;
+            registrarMensaje(body.phone, 'admin', "📢 [Plantilla Iniciada]", null, messageId);
+            
+            res.end(JSON.stringify({ status: 'ok' }));
+        } catch (e) {
+            console.error(e)
+            res.end(JSON.stringify({ status: 'error', error: e.message }));
+        }
     })
 
     adapterProvider.server.post('/api/send', async (req, res) => {

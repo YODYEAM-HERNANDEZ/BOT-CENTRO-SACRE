@@ -24,6 +24,7 @@
         .msg-img:hover { transform: scale(1.02); }
         
         .badge-tag { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-right: 2px; text-transform: uppercase; }
+        /* COLORES ETIQUETAS EXACTOS */
         .tag-blue { background-color: #cce5ff; color: #004085; }
         .tag-red { background-color: #fce4ec; color: #c2185b; border: 1px solid #f8bbd0; } 
         .tag-orange { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; } 
@@ -68,6 +69,9 @@
             </div>
             <div class="flex items-center gap-3">
                 <input type="text" id="search-in-chat" placeholder="🔍 Buscar en chat..." class="p-1 rounded border text-xs w-32 hidden md:block" onkeyup="searchInChat()">
+                
+                <button onclick="sendTemplate()" class="text-orange-500 hover:text-orange-700" title="Enviar Plantilla (Iniciar 24h)"><i class="fas fa-bullhorn"></i></button>
+
                 <button onclick="document.getElementById('modal-tags').classList.remove('hidden')" class="text-gray-600 hover:text-blue-600" title="Etiquetas"><i class="fas fa-tag"></i></button>
                 <button onclick="toggleBot()" id="btn-toggle" class="hidden px-3 py-1 rounded text-xs font-bold shadow transition uppercase"></button>
             </div>
@@ -293,6 +297,15 @@
                 headers: {'Content-Type': 'application/json'}, 
                 body: JSON.stringify({ phone: currentPhone, messageId, emoji }) 
             }); 
+        }
+
+        async function sendTemplate() {
+            if(!currentPhone) return;
+            const res = await fetch('/api/send-template', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone }) });
+            const data = await res.json();
+            if(data.status === 'ok') alert('✅ Plantilla enviada correctamente');
+            else alert('❌ Error: ' + data.error);
+            loadMessages();
         }
 
         async function toggleTag(tagName) {
