@@ -9,31 +9,23 @@
     <style>
         body { background-color: #d1d7db; font-family: 'Segoe UI', sans-serif; }
         .chat-bg { background-color: #efeae2; opacity: 0.95; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
-        
         .msg-bubble { position: relative; padding: 8px 12px; border-radius: 8px; max-width: 75%; margin-bottom: 6px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); word-wrap: break-word; }
         .msg-cliente { background-color: #ffffff; align-self: flex-start; border-top-left-radius: 0; }
         .msg-admin { background-color: #d9fdd3; align-self: flex-end; border-top-right-radius: 0; }
         .msg-bot { background-color: #f0f2f5; align-self: flex-end; font-size: 0.9em; font-style: italic; border: 1px dashed #ccc; width: fit-content; }
-        
         .active-chat { background-color: #e9edef; border-left: 4px solid #008069; }
-        
         .msg-actions { display: none; position: absolute; top: -25px; right: 0; padding: 4px; background: rgba(255,255,255,0.95); border-radius: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); z-index: 10; gap: 5px; align-items: center; border: 1px solid #ddd; }
         .msg-bubble:hover .msg-actions { display: flex; }
-        
         .msg-img { max-width: 250px; border-radius: 8px; cursor: pointer; margin-bottom: 5px; transition: transform 0.2s; }
         .msg-img:hover { transform: scale(1.02); }
-        
         .badge-tag { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-right: 2px; text-transform: uppercase; }
-        /* COLORES ETIQUETAS EXACTOS */
         .tag-blue { background-color: #cce5ff; color: #004085; }
         .tag-red { background-color: #fce4ec; color: #c2185b; border: 1px solid #f8bbd0; } 
         .tag-orange { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; } 
         .tag-yellow { background-color: #ffffcc; color: #666600; border: 1px solid #e6e600; } 
         .tag-green { background-color: #d4edda; color: #155724; }
-
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 3px; }
-        
         .link-style { color: #027eb5; text-decoration: underline; word-break: break-all; }
     </style>
 </head>
@@ -52,7 +44,6 @@
         </div>
         <div id="contacts-list" class="flex-1 overflow-y-auto"></div>
     </div>
-
     <div class="flex-1 flex flex-col bg-[#efeae2] relative min-w-[400px]">
         <div id="empty-state" class="absolute inset-0 z-10 bg-[#f0f2f5] flex justify-center items-center">
             <div class="text-center">
@@ -60,7 +51,6 @@
                 <p class="text-gray-400 text-sm">Selecciona un chat para comenzar</p>
             </div>
         </div>
-
         <div class="bg-[#f0f2f5] p-3 flex justify-between items-center h-16 border-b z-20 shadow-sm">
             <div class="flex items-center w-2/3 gap-2">
                 <div id="chat-title" class="font-bold cursor-pointer truncate" onclick="editName()">...</div>
@@ -69,27 +59,19 @@
             </div>
             <div class="flex items-center gap-3">
                 <input type="text" id="search-in-chat" placeholder="🔍 Buscar en chat..." class="p-1 rounded border text-xs w-32 hidden md:block" onkeyup="searchInChat()">
-                
                 <button onclick="sendTemplate()" class="text-orange-500 hover:text-orange-700" title="Enviar Plantilla (Iniciar 24h)"><i class="fas fa-bullhorn"></i></button>
-
                 <button onclick="document.getElementById('modal-tags').classList.remove('hidden')" class="text-gray-600 hover:text-blue-600" title="Etiquetas"><i class="fas fa-tag"></i></button>
                 <button onclick="toggleBot()" id="btn-toggle" class="hidden px-3 py-1 rounded text-xs font-bold shadow transition uppercase"></button>
             </div>
         </div>
-
         <div id="chat-history" class="flex-1 overflow-y-auto p-4 chat-bg flex flex-col gap-1"></div>
-
-        <div id="warning-24h" class="hidden bg-red-100 text-red-700 text-xs p-1 text-center border-t border-red-200">
-            ⚠️ Ventana de 24h cerrada. Es probable que el mensaje no llegue si no usas una Plantilla.
-        </div>
-
+        <div id="warning-24h" class="hidden bg-red-100 text-red-700 text-xs p-1 text-center border-t border-red-200">⚠️ Ventana de 24h cerrada. Es probable que el mensaje no llegue si no usas una Plantilla.</div>
         <div class="bg-[#f0f2f5] p-3 flex gap-2 items-end">
             <button onclick="document.getElementById('modal-quick').classList.remove('hidden')" class="text-xl p-2 text-gray-600 hover:text-yellow-600">⚡</button>
             <textarea id="msg-input" rows="1" class="flex-1 p-3 rounded-lg resize-y border border-gray-300 focus:outline-none focus:border-green-500" placeholder="Escribe un mensaje..." onkeypress="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendMsg();}"></textarea>
             <button onclick="sendMsg()" class="text-[#008069] text-2xl px-3 hover:scale-110 transition"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
-
     <div id="modal-quick" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
         <div class="bg-white rounded p-6 w-[600px] max-h-[80vh] overflow-y-auto shadow-lg">
             <div class="flex justify-between mb-4 border-b pb-2">
@@ -99,7 +81,6 @@
             <div class="grid grid-cols-1 gap-2" id="quick-list"></div>
         </div>
     </div>
-
     <div id="modal-tags" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
         <div class="bg-white rounded p-6 w-80 shadow-lg">
             <h2 class="font-bold mb-4 text-gray-700">🏷️ Gestión de Etiquetas</h2>
@@ -113,7 +94,6 @@
             <button onclick="document.getElementById('modal-tags').classList.add('hidden')" class="mt-4 w-full bg-gray-200 p-2 rounded hover:bg-gray-300">Cerrar</button>
         </div>
     </div>
-
     <script>
         let currentPhone = null;
         let isBotActive = true; 
@@ -133,10 +113,7 @@
         function init() {
             const list = document.getElementById('quick-list');
             QUICK_REPLIES.forEach(q => {
-                list.innerHTML += `<div onclick="selectQuickReply(this.getAttribute('data-text'))" data-text="${encodeURIComponent(q.text)}" class="p-3 border rounded cursor-pointer hover:bg-green-50 transition">
-                                     <div class="font-bold text-gray-800">${q.title}</div>
-                                     <div class="text-xs text-gray-500 truncate">${q.text.substring(0,80)}...</div>
-                                   </div>`;
+                list.innerHTML += `<div onclick="selectQuickReply(this.getAttribute('data-text'))" data-text="${encodeURIComponent(q.text)}" class="p-3 border rounded cursor-pointer hover:bg-green-50 transition"><div class="font-bold text-gray-800">${q.title}</div><div class="text-xs text-gray-500 truncate">${q.text.substring(0,80)}...</div></div>`;
             });
             setInterval(() => { loadContacts(); if(currentPhone) loadMessages(); }, 3000); 
             loadContacts();
@@ -153,9 +130,7 @@
                 const res = await fetch('/api/contacts');
                 const data = await res.json();
                 contactsCache = data;
-
                 const filtered = data.filter(c => (c.name && c.name.toLowerCase().includes(query)) || c.phone.includes(query));
-
                 const list = document.getElementById('contacts-list');
                 list.innerHTML = filtered.map(c => {
                     let tagsHtml = c.tags.map(t => {
@@ -166,18 +141,7 @@
                         if(t==='Cita Confirmada') color = 'tag-green';
                         return `<span class="badge-tag ${color}">${t}</span>`;
                     }).join('');
-                    
-                    return `<div onclick="openChat('${c.phone}')" class="p-3 border-b cursor-pointer hover:bg-gray-100 transition ${currentPhone === c.phone ? 'active-chat' : ''}">
-                                <div class="font-bold flex items-center justify-between text-gray-800">
-                                    <span class="truncate">${c.isChatPinned ? '📌' : ''} ${c.name || c.phone}</span>
-                                    ${c.unreadCount > 0 ? `<span class="bg-green-500 text-white text-[10px] rounded-full px-2 py-0.5">${c.unreadCount}</span>` : ''}
-                                </div>
-                                <div class="text-xs text-gray-500 truncate flex items-center gap-1 mt-1">
-                                    ${tagsHtml} 
-                                    <span class="text-gray-400 ml-auto">${new Date(c.timestamp).toLocaleDateString()}</span>
-                                </div>
-                                <div class="text-xs text-gray-400 truncate">${c.lastMessage}</div>
-                            </div>`
+                    return `<div onclick="openChat('${c.phone}')" class="p-3 border-b cursor-pointer hover:bg-gray-100 transition ${currentPhone === c.phone ? 'active-chat' : ''}"><div class="font-bold flex items-center justify-between text-gray-800"><span class="truncate">${c.isChatPinned ? '📌' : ''} ${c.name || c.phone}</span>${c.unreadCount > 0 ? `<span class="bg-green-500 text-white text-[10px] rounded-full px-2 py-0.5">${c.unreadCount}</span>` : ''}</div><div class="text-xs text-gray-500 truncate flex items-center gap-1 mt-1">${tagsHtml} <span class="text-gray-400 ml-auto">${new Date(c.timestamp).toLocaleDateString()}</span></div><div class="text-xs text-gray-400 truncate">${c.lastMessage}</div></div>`
                 }).join('');
             } catch(e) { console.error(e); }
         }
@@ -190,7 +154,6 @@
             const contact = contactsCache.find(c => c.phone === phone);
             if(contact && contact.sessionExpired) document.getElementById('warning-24h').classList.remove('hidden');
             else document.getElementById('warning-24h').classList.add('hidden');
-
             const phoneLink = `<a href="https://wa.me/${phone}" target="_blank" title="Abrir en WhatsApp Web" class="ml-2 text-green-600 hover:text-green-800 text-lg"><i class="fab fa-whatsapp"></i></a>`;
             document.getElementById('chat-title').innerHTML = (contact?.name || phone) + phoneLink;
             await loadMessages();
@@ -210,7 +173,6 @@
             const data = await res.json();
             allMessages = data.messages || [];
             updateBotButton(data.isHuman);
-            
             const me = contactsCache.find(c => c.phone === currentPhone);
             const headerTags = document.getElementById('header-tags');
             if(me && me.tags) {
@@ -229,44 +191,22 @@
         function renderMessages(msgs) {
             const box = document.getElementById('chat-history');
             const searchQuery = document.getElementById('search-in-chat').value.toLowerCase();
-
             box.innerHTML = msgs.map(m => {
                 const bodyLower = m.body ? m.body.toLowerCase() : '';
                 const highlightClass = (searchQuery && bodyLower.includes(searchQuery)) ? 'bg-yellow-100 ring-2 ring-yellow-400' : '';
                 const cls = m.role === 'admin' ? 'msg-admin' : (m.role === 'bot' ? 'msg-bot' : 'msg-cliente');
                 let content = `<div class="whitespace-pre-wrap text-sm ${highlightClass}">${formatMessageBody(m.body)}</div>`;
-                
                 if(m.type === 'image') {
                     const src = m.mediaUrl || '#';
                     content = `<img src="${src}" class="msg-img" onclick="window.open('${src}')"><div class="text-xs text-gray-500">📷 Imagen</div>`;
                 }
-                if(m.type === 'audio') {
-                    content = `<audio controls src="${m.mediaUrl}" class="w-64 mt-1"></audio><div class="text-xs text-gray-500">🎵 Audio</div>`;
-                }
-                if(m.type === 'file') {
-                    content = `<a href="${m.mediaUrl}" target="_blank" class="bg-gray-100 p-2 rounded flex items-center gap-2 cursor-pointer hover:bg-gray-200"><i class="fas fa-file-alt text-red-500"></i> <span class="text-blue-600 underline text-sm">Descargar Archivo</span></a>`;
-                }
+                if(m.type === 'audio') content = `<audio controls src="${m.mediaUrl}" class="w-64 mt-1"></audio><div class="text-xs text-gray-500">🎵 Audio</div>`;
+                if(m.type === 'file') content = `<a href="${m.mediaUrl}" target="_blank" class="bg-gray-100 p-2 rounded flex items-center gap-2 cursor-pointer hover:bg-gray-200"><i class="fas fa-file-alt text-red-500"></i> <span class="text-blue-600 underline text-sm">Descargar Archivo</span></a>`;
                 if(m.type === 'system') return ''; 
-
                 const starIcon = m.isStarred ? '<i class="fas fa-star text-yellow-500 text-xs"></i>' : '';
                 const pinClass = m.isPinned ? 'border-l-4 border-yellow-400' : '';
                 const msgId = m.id || '';
-
-                return `<div class="msg-bubble ${cls} ${pinClass} group">
-                            ${content}
-                            <div class="text-[10px] text-gray-400 text-right flex justify-end gap-1 mt-1 items-center">
-                                ${starIcon} ${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
-                            </div>
-                            <div class="msg-actions">
-                                <button onclick="copyToClipboard('${m.body ? m.body.replace(/'/g, "\\'") : ''}')" title="Copiar Texto" class="hover:bg-gray-200 p-1 rounded text-gray-600"><i class="fas fa-copy"></i></button>
-                                <button onclick="msgAction(${m.timestamp}, 'star', ${m.isStarred})" title="Destacar" class="hover:bg-gray-200 p-1 rounded"><i class="fas fa-star ${m.isStarred ? 'text-yellow-500' : 'text-gray-300'}"></i></button>
-                                <button onclick="msgAction(${m.timestamp}, 'pin', ${m.isPinned})" title="Fijar" class="hover:bg-gray-200 p-1 rounded"><i class="fas fa-thumbtack ${m.isPinned ? 'text-green-600' : 'text-gray-300'}"></i></button>
-                                <span class="text-gray-300">|</span>
-                                <button onclick="sendReaction('${msgId}', '👍')" title="Reaccionar 👍" class="hover:scale-125 transition">👍</button>
-                                <button onclick="sendReaction('${msgId}', '❤️')" title="Reaccionar ❤️" class="hover:scale-125 transition">❤️</button>
-                                <button onclick="sendReaction('${msgId}', '✅')" title="Reaccionar ✅" class="hover:scale-125 transition">✅</button>
-                            </div>
-                        </div>`
+                return `<div class="msg-bubble ${cls} ${pinClass} group">${content}<div class="text-[10px] text-gray-400 text-right flex justify-end gap-1 mt-1 items-center">${starIcon} ${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div><div class="msg-actions"><button onclick="copyToClipboard('${m.body ? m.body.replace(/'/g, "\\'") : ''}')" title="Copiar Texto" class="hover:bg-gray-200 p-1 rounded text-gray-600"><i class="fas fa-copy"></i></button><button onclick="msgAction(${m.timestamp}, 'star', ${m.isStarred})" title="Destacar" class="hover:bg-gray-200 p-1 rounded"><i class="fas fa-star ${m.isStarred ? 'text-yellow-500' : 'text-gray-300'}"></i></button><button onclick="msgAction(${m.timestamp}, 'pin', ${m.isPinned})" title="Fijar" class="hover:bg-gray-200 p-1 rounded"><i class="fas fa-thumbtack ${m.isPinned ? 'text-green-600' : 'text-gray-300'}"></i></button><span class="text-gray-300">|</span><button onclick="sendReaction('${msgId}', '👍')" title="Reaccionar 👍" class="hover:scale-125 transition">👍</button><button onclick="sendReaction('${msgId}', '❤️')" title="Reaccionar ❤️" class="hover:scale-125 transition">❤️</button><button onclick="sendReaction('${msgId}', '✅')" title="Reaccionar ✅" class="hover:scale-125 transition">✅</button></div></div>`
             }).join('');
         }
 
@@ -292,11 +232,7 @@
                 alert("Este mensaje es antiguo y no tiene ID guardado para reaccionar.");
                 return;
             }
-            await fetch('/api/react', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ phone: currentPhone, messageId, emoji }) 
-            }); 
+            await fetch('/api/react', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, messageId, emoji }) }); 
         }
 
         async function sendTemplate() {
@@ -342,17 +278,11 @@
             const txt = input.value;
             if(!txt || !currentPhone) return;
             input.value = '';
-            
             const warning = document.getElementById('warning-24h');
-            if(!warning.classList.contains('hidden')) {
-                alert("⚠️ ¡CUIDADO! La ventana de 24 horas está cerrada. Es probable que este mensaje no llegue al cliente.");
-            }
-
+            if(!warning.classList.contains('hidden')) { alert("⚠️ ¡CUIDADO! La ventana de 24 horas está cerrada. Es probable que este mensaje no llegue al cliente."); }
             const res = await fetch('/api/send', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: currentPhone, message: txt }) });
             const data = await res.json();
-            if(data.status === 'error') {
-                alert('Error al enviar: ' + data.error);
-            }
+            if(data.status === 'error') { alert('Error al enviar: ' + data.error); }
             loadMessages();
         }
 
