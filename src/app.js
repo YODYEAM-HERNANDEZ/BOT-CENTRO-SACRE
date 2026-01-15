@@ -255,7 +255,7 @@ const flowMenu = addKeyword(['Menu', 'menu', 'menú'])
         '8️⃣ ¿Quiénes somos? 💫\n',
         '9️⃣ Hablar con un asesor 👩‍💻\n',
         '1️⃣0️⃣ Vas tarde 🏃‍♀️\n',
-        '🔺Aviso importante🔺\n'
+        '🔺Aviso importante🔺\n',
         'Las confirmaciones harán por medio de llamada telefónica en nuestro teléfono fijo: 5595012111'
     ].join('\n'), { capture: true }, async (ctx, { gotoFlow, fallBack }) => {
         const op = ctx.body.trim();
