@@ -89,9 +89,9 @@ const flowAsesor = addKeyword(['asesor', 'humano'])
         usuariosEnModoHumano.add(ctx.from);
     })
     .addAnswer([
-        '¡Por supuesto! 💬 He notificado a un miembro de nuestro equipo para darte atención personalizada.',
-        'En unos momentos alguien se pondrá en contacto contigo. 🤗',
-        '🕓 Nuestro horario de atención es: Lunes a Viernes: 10:00 a.m. – 7:00 p.m. Sábados: 8:00 a.m. – 2:00 p.m.',
+        '¡Por supuesto! 💬 He notificado a un miembro de nuestro equipo para darte atención personalizada.\n',
+        'En unos momentos alguien se pondrá en contacto contigo. 🤗\n',
+        '🕓 Nuestro horario de atención es: Lunes a Viernes: 10:00 a.m. – 7:00 p.m. Sábados: 8:00 a.m. – 2:00 p.m.\n',
         'IMPORTANTE: Si tu situación es urgente, puedes llamarnos directamente 📞 y con gusto te comunicaremos con una asistente.'
     ].join('\n'), null, async (ctx, { gotoFlow }) => { 
         return gotoFlow(flowHumano) 
@@ -99,24 +99,24 @@ const flowAsesor = addKeyword(['asesor', 'humano'])
 
 const flowNosotros = addKeyword(['quienes', 'somos'])
     .addAnswer([
-        'Centro Sacre fue fundado el 18 de agosto de 2018 por la fisioterapeuta Nayeli Silva, con la visión de ofrecer una atención auténtica, personalizada e integral 💕',
-        'En una época donde casi no existían clínicas especializadas en suelo pélvico, Nayeli decidió crear un espacio seguro y profesional para acompañar los procesos de rehabilitación 🌿',
-        'Gracias a la confianza de nuestros pacientes, en 2020 se unió Grecia Zapara, fortaleciendo nuestra filosofía y ampliando nuestros servicios 🙌',
-        'Hoy, contamos con dos sucursales y somos un referente en fisioterapia del suelo pélvico y bienestar integral 🌸',
+        'Centro Sacre fue fundado el 18 de agosto de 2018 por la fisioterapeuta Nayeli Silva, con la visión de ofrecer una atención auténtica, personalizada e integral 💕\n',
+        'En una época donde casi no existían clínicas especializadas en suelo pélvico, Nayeli decidió crear un espacio seguro y profesional para acompañar los procesos de rehabilitación 🌿\n',
+        'Gracias a la confianza de nuestros pacientes, en 2020 se unió Grecia Zapara, fortaleciendo nuestra filosofía y ampliando nuestros servicios 🙌\n',
+        'Hoy, contamos con dos sucursales y somos un referente en fisioterapia del suelo pélvico y bienestar integral 🌸\n',
         'Más que una clínica, somos un espacio que conecta cuerpo, mente y emoción, promoviendo una salud que cuida la vida misma 💗'
     ].join('\n\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
 
 // --- FACTURA ---
 const flowFactura = addKeyword(['factura'])
     .addAnswer([
-        'Puedes solicitar tu factura enviando un correo a: centrosacre@gmail.com',
+        'Puedes solicitar tu factura enviando un correo a: centrosacre@gmail.com\n',
         'Envíanos tu Constancia de situación Fiscal y en asunto pon: Factura'
     ].join('\n\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
 
 const flowCancelar = addKeyword(['cancelar', 'baja'])
     .addAnswer([
-        'Lamentamos que tengas que cancelar 😢 Por favor, comunícate con nosotros por llamada 📞 para hacerlo directamente.',
-        '⚠️ Ten en cuenta que al cancelar tu cita puede interrumpirse la continuidad de tu tratamiento, ya que el tiempo de espera para reagendar es de aproximadamente 2 semanas.',
+        'Lamentamos que tengas que cancelar 😢 Por favor, comunícate con nosotros por llamada 📞 para hacerlo directamente.\n',
+        '⚠️ Ten en cuenta que al cancelar tu cita puede interrumpirse la continuidad de tu tratamiento, ya que el tiempo de espera para reagendar es de aproximadamente 2 semanas.\n',
         'Gracias por tu comprensión 💗'
     ].join('\n\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
 
@@ -131,8 +131,8 @@ const flowTarde = addKeyword(['tarde', 'retraso', 'llegar'])
         '',
         '📅  Puedes indicarnos fecha y hora de tu cita para cancelar.',
         '',
-        '😥 Solo recuerda que al perder esta cita el re-agendarla implica tiempo de espera.',
-        '☹️ Te compartimos el link para que te reagendes directamente:',
+        '😥 Solo recuerda que al perder esta cita el re-agendarla implica tiempo de espera.\n',
+        '☹️ Te compartimos el link para que te reagendes directamente:\n',
         'https://centrosacre.com/solicitudCitas?cc=yuwE3pdEW3'
     ].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
 
@@ -151,7 +151,7 @@ const flowHorarios = addKeyword(['horarios'])
 
 const flowPrecios = addKeyword(['precios', 'costos'])
     .addAnswer([
-        '💰 Lista de Precios Actuales:',
+        '💰 Lista de Precios Actuales:\n',
         '🔹 Consulta inicial: $1,350 MXN',
         '🔹 Sesiones subsecuentes: $1,250 MXN',
         '(Precios no incluyen IVA)'
@@ -159,16 +159,16 @@ const flowPrecios = addKeyword(['precios', 'costos'])
 
 const flowAgendar = addKeyword(['agendar', 'cita'])
     .addAnswer([
-        'Pasos para agendar tu cita:',
-        '1️⃣ Ingresa al siguiente enlace: https://centrosacre.com/solicitudCitas?cc=yuwE3pdEW3',
-        '2️⃣ Elige la sucursal de tu preferencia 🏠',
-        '3️⃣ Selecciona el tipo de sesión que necesitas 🩼',
-        '4️⃣ Elige a tu fisioterapeuta (si no conoces a ninguna, ¡todo nuestro equipo está preparado para ayudarte! 💪 )',
-        '5️⃣ Escoge día y horas disponibles 🗓️',
-        '6️⃣ Llena los datos del paciente ✍️ y da clic en CONFIRMAR ✅',
-        '7️⃣ ¡Listo! 🎉 Tu cita quedó registrada.',
-        '📩 Te enviaremos un recordatorio un día antes de tu cita.',
-        'IMPORTANTE: Si no recibiste ningún mensaje comunícate directamente por llamada.',
+        'Pasos para agendar tu cita:\n',
+        '1️⃣ Ingresa al siguiente enlace: https://centrosacre.com/solicitudCitas?cc=yuwE3pdEW3\n',
+        '2️⃣ Elige la sucursal de tu preferencia 🏠\n',
+        '3️⃣ Selecciona el tipo de sesión que necesitas 🩼\n',
+        '4️⃣ Elige a tu fisioterapeuta (si no conoces a ninguna, ¡todo nuestro equipo está preparado para ayudarte! 💪 )\n',
+        '5️⃣ Escoge día y horas disponibles 🗓️\n',
+        '6️⃣ Llena los datos del paciente ✍️ y da clic en CONFIRMAR ✅\n',
+        '7️⃣ ¡Listo! 🎉 Tu cita quedó registrada.\n',
+        '📩 Te enviaremos un recordatorio un día antes de tu cita.\n',
+        'IMPORTANTE: Si no recibiste ningún mensaje comunícate directamente por llamada.\n',
         '⚠️ Por favor, agenda solo una vez para mantener una atención adecuada a todos los pacientes 💚'
     ].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowContinuar))
 
@@ -225,18 +225,18 @@ const flowDescripcionServicios = addKeyword('INTERNAL_DESC_SERVICIOS')
 
 const flowServicios = addKeyword(['servicios', 'tratamientos'])
     .addAnswer([
-        '¡Claro! 🌸 En Centro Sacre contamos con atención especializada en:',
-        '1️⃣ 🫶 Fisioterapia',
-        '2️⃣ 👐 Osteopatía',
-        '3️⃣ 🚶🏻‍♀️ Reeducación postural global (RPG)',
-        '4️⃣ 🩷 Rehabilitación de Suelo Pélvico',
-        '5️⃣ 👶 Osteopatía Pediátrica',
-        '6️⃣ 🤰 Preparación para el parto',
-        '7️⃣ 🤱 Rehabilitación Post embarazo',
-        '8️⃣ 🌿 Mastitis',
-        '9️⃣ 🚑 Rehabilitación oncológica',
-        '10️⃣ 🦵 Drenaje linfático',
-        '11️⃣ 🙋🏻‍♂️ Rehabilitación suelo pélvico masculino',
+        '¡Claro! 🌸 En Centro Sacre contamos con atención especializada en:\n',
+        '1️⃣ 🫶 Fisioterapia\n',
+        '2️⃣ 👐 Osteopatía\n',
+        '3️⃣ 🚶🏻‍♀️ Reeducación postural global (RPG)\n',
+        '4️⃣ 🩷 Rehabilitación de Suelo Pélvico\n',
+        '5️⃣ 👶 Osteopatía Pediátrica\n',
+        '6️⃣ 🤰 Preparación para el parto\n',
+        '7️⃣ 🤱 Rehabilitación Post embarazo\n',
+        '8️⃣ 🌿 Mastitis\n',
+        '9️⃣ 🚑 Rehabilitación oncológica\n',
+        '1️⃣0️⃣ 🦵 Drenaje linfático\n',
+        '1️⃣1️⃣ 🙋🏻‍♂️ Rehabilitación suelo pélvico masculino\n',
         '',
         '*(Escribe el número del servicio para más detalles)*'
     ].join('\n'), null, async (_, { gotoFlow }) => gotoFlow(flowDescripcionServicios))
@@ -244,17 +244,19 @@ const flowServicios = addKeyword(['servicios', 'tratamientos'])
 // --- MENÚ PRINCIPAL ---
 const flowMenu = addKeyword(['Menu', 'menu', 'menú'])
     .addAnswer([
-        'Por favor, elige la opción que deseas para poder apoyarte:',
-        '1️⃣ Saber más sobre nuestros servicios',
-        '2️⃣ Sucursales',
-        '3️⃣ Agendar una cita 📅',
-        '4️⃣ Conocer precios 💰',
-        '5️⃣ Horarios de sucursales 🕒',
-        '6️⃣ Cancelar cita ❌',
-        '7️⃣ Solicitar factura 🧾',
-        '8️⃣ ¿Quiénes somos? 💫',
-        '9️⃣ Hablar con un asesor 👩‍💻',
-        '10️⃣ Vas tarde 🏃‍♀️'
+        'Por favor, elige la opción que deseas para poder apoyarte:\n',
+        '1️⃣ Saber más sobre nuestros servicios\n',
+        '2️⃣ Sucursales\n',
+        '3️⃣ Agendar una cita 📅\n',
+        '4️⃣ Conocer precios 💰\n',
+        '5️⃣ Horarios de sucursales 🕒\n',
+        '6️⃣ Cancelar cita ❌\n',
+        '7️⃣ Solicitar factura 🧾\n',
+        '8️⃣ ¿Quiénes somos? 💫\n',
+        '9️⃣ Hablar con un asesor 👩‍💻\n',
+        '1️⃣0️⃣ Vas tarde 🏃‍♀️\n',
+        '🔺Aviso importante🔺\n'
+        'Las confirmaciones harán por medio de llamada telefónica en nuestro teléfono fijo: 5595012111'
     ].join('\n'), { capture: true }, async (ctx, { gotoFlow, fallBack }) => {
         const op = ctx.body.trim();
 
@@ -278,14 +280,14 @@ const flowMenu = addKeyword(['Menu', 'menu', 'menú'])
 
 const flowFormulario = addKeyword(['formulario_registro'])
     .addAnswer([
-        'Nos hace muy felices que hayas elegido a Centro Sacre para tu rehabilitación 💃',
-        'Para asegurarnos de preparar todo para tu visita ¿podrías compartirnos algunos datos?',
-        '🔹 Nombre completo:',
-        '🔹 Número de teléfono:',
-        '🔹 Correo electrónico:',
-        '🔹 Motivo de consulta:',
-        '🔹 Doctor@ que canaliza:',
-        '🔹 Fecha de nacimiento:',
+        'Nos hace muy felices que hayas elegido a Centro Sacre para tu rehabilitación 💃\n',
+        'Para asegurarnos de preparar todo para tu visita ¿podrías compartirnos algunos datos?\n',
+        '🔹 Nombre completo:\n',
+        '🔹 Número de teléfono:\n',
+        '🔹 Correo electrónico:\n',
+        '🔹 Motivo de consulta:\n',
+        '🔹 Doctor@ que canaliza:\n',
+        '🔹 Fecha de nacimiento:\n',
         '(Envía todo en un solo mensaje por favor)'
     ].join('\n'), { capture: true }, async (ctx, { state }) => state.update({ datos: ctx.body }))
     .addAnswer([
@@ -299,8 +301,8 @@ const flowPrincipal = addKeyword([EVENTS.WELCOME, 'hola', 'buenas', 'buenos dias
         if (usuariosEnModoHumano.has(ctx.from)) return gotoFlow(flowHumano);
     })
     .addAnswer([
-        '¡Hola! 😊 Te damos la bienvenida a Centro Sacre 🩷 .',
-        'Soy FisioBot tu asistente virtual y estoy aquí para ayudarte a encontrar la información que necesitas de forma rápida y sencilla.',
+        '¡Hola! 😊 Te damos la bienvenida a Centro Sacre 🩷 .\n',
+        'Soy FisioBot tu asistente virtual y estoy aquí para ayudarte a encontrar la información que necesitas de forma rápida y sencilla.\n',
         'Indícanos si eres paciente de primera vez:'
     ].join('\n'), { capture: true, buttons: [{ body: 'Si' }, { body: 'No' }] }, async (ctx, { gotoFlow, fallBack }) => {
         if (usuariosEnModoHumano.has(ctx.from)) return gotoFlow(flowHumano);
